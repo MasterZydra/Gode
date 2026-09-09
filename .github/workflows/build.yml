@@ -67,9 +67,9 @@ jobs:
         with:
           name: ${{ matrix.artifact }}
           path: |
-            ${{ matrix.os == 'linux' && '*' || ''}}
-            ${{ matrix.os == 'windows' && '*.exe' || '' }}
-            ${{ matrix.os == 'macos' && '*.app' || '' }}
+            ${{ runner.os == 'Linux' && '*' || ''}}
+            ${{ runner.os == 'Windows' && '*.exe' || '' }}
+            ${{ runner.os == 'macOS' && '*.app' || '' }}
             *.tar.gz
             *.zip
           if-no-files-found: error
