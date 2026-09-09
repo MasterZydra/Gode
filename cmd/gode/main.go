@@ -10,6 +10,7 @@ import (
 	"fyne.io/fyne/v2/app"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/dialog"
+	"fyne.io/fyne/v2/driver/desktop"
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
@@ -120,6 +121,7 @@ func main() {
 	textEditor.Scroll = fyne.ScrollBoth
 	textEditor.TextStyle.Monospace = true
 	selectedFileName := ""
+	selectedFilePath := ""
 	dirty := false
 	loadingFile := false
 	updateWindowTitle := func() {
@@ -140,6 +142,29 @@ func main() {
 		dirty = true
 		updateWindowTitle()
 	}
+	saveFile := func() {
+		if selectedFilePath == "" {
+			return
+		}
+
+		fileInfo, err := os.Stat(selectedFilePath)
+		if err != nil {
+			dialog.ShowError(err, myWindow)
+			return
+		}
+		if err := os.WriteFile(selectedFilePath, []byte(textEditor.Text), fileInfo.Mode().Perm()); err != nil {
+			dialog.ShowError(err, myWindow)
+			return
+		}
+		dirty = false
+		updateWindowTitle()
+	}
+	saveShortcut := &desktop.CustomShortcut{KeyName: fyne.KeyS, Modifier: fyne.KeyModifierControl}
+	myWindow.SetMainMenu(fyne.NewMainMenu(fyne.NewMenu("File", &fyne.MenuItem{
+		Label:    "Save",
+		Action:   saveFile,
+		Shortcut: saveShortcut,
+	})))
 	tree.OnSelected = func(id widget.TreeNodeID) {
 		node := findNode(id)
 		if node == nil {
@@ -148,6 +173,7 @@ func main() {
 		if node.IsDir {
 			tree.ToggleBranch(id)
 			selectedFileName = ""
+			selectedFilePath = ""
 			dirty = false
 			updateWindowTitle()
 			return
@@ -172,6 +198,7 @@ func main() {
 		textEditor.SetText(string(contents))
 		loadingFile = false
 		selectedFileName = node.Name
+		selectedFilePath = node.Path
 		dirty = false
 		updateWindowTitle()
 	}
