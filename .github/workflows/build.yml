@@ -32,10 +32,10 @@ jobs:
 
     steps:
       - name: Check out source
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Set up Go
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@v7
         with:
           go-version-file: go.mod
           cache: true
@@ -63,12 +63,13 @@ jobs:
         run: fyne package -os ${{ matrix.fyne_os }} -src cmd/gode -name gode -app-id com.gode.editor -icon "${{ github.workspace }}/assets/gode.png" -release
 
       - name: Upload package
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ${{ matrix.artifact }}
           path: |
-            *.app
-            *.exe
+            ${{ matrix.os == 'linux' && '*' || ''}}
+            ${{ matrix.os == 'windows' && '*.exe' || '' }}
+            ${{ matrix.os == 'macos' && '*.app' || '' }}
             *.tar.gz
             *.zip
           if-no-files-found: error
