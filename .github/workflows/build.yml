@@ -34,18 +34,60 @@ jobs:
       - name: Check out source
         uses: actions/checkout@v7
 
+      # ------------------------------------------------------------
+      # Linux dependencies
+      # ------------------------------------------------------------
+      - name: Install Linux Fyne dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            gcc \
+            libgl1-mesa-dev \
+            xorg-dev \
+            libwayland-dev \
+            libxkbcommon-dev
+
+      # ------------------------------------------------------------
+      # Windows / MSYS2 / MinGW64
+      # ------------------------------------------------------------
+      - name: Set up MSYS2
+        if: runner.os == 'Windows'
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: MINGW64
+          update: true
+          install: >-
+            git
+            mingw-w64-x86_64-toolchain
+            mingw-w64-x86_64-go
+
+      - name: Add MinGW64 to PATH
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          echo "C:\msys64\mingw64\bin" >> $env:GITHUB_PATH
+
+      - name: Configure Windows CGO
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          echo "CGO_ENABLED=1" >> $env:GITHUB_ENV
+          echo "CC=x86_64-w64-mingw32-gcc" >> $env:GITHUB_ENV
+          echo "CXX=x86_64-w64-mingw32-g++" >> $env:GITHUB_ENV
+
+      # ------------------------------------------------------------
+      # Go
+      # ------------------------------------------------------------
       - name: Set up Go
         uses: actions/setup-go@v7
         with:
           go-version-file: go.mod
           cache: true
 
-      - name: Install Linux Fyne dependencies
-        if: runner.os == 'Linux'
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y gcc libgl1-mesa-dev xorg-dev libwayland-dev libxkbcommon-dev
-
+      # ------------------------------------------------------------
+      # Fyne tooling
+      # ------------------------------------------------------------
       - name: Install Fyne packaging tool
         run: go install fyne.io/tools/cmd/fyne@latest
 
@@ -53,15 +95,47 @@ jobs:
         shell: bash
         run: echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
 
+      # ------------------------------------------------------------
+      # Verify Windows compiler
+      # ------------------------------------------------------------
+      - name: Check Windows compiler
+        if: runner.os == 'Windows'
+        shell: bash
+        run: |
+          gcc --version
+          go version
+          go env CGO_ENABLED
+          go env CC
+
+      # ------------------------------------------------------------
+      # Tests
+      # ------------------------------------------------------------
       - name: Run tests
         run: go test ./...
 
+      # ------------------------------------------------------------
+      # Build
+      # ------------------------------------------------------------
       - name: Build project
         run: go build ./...
 
+      # ------------------------------------------------------------
+      # Package
+      # ------------------------------------------------------------
       - name: Package application
-        run: fyne package -os ${{ matrix.fyne_os }} -src cmd/gode -name gode -app-id com.gode.editor -icon "${{ github.workspace }}/assets/gode.png" -release
+        shell: bash
+        run: |
+          fyne package \
+            -os ${{ matrix.fyne_os }} \
+            -src cmd/gode \
+            -name gode \
+            -app-id com.gode.editor \
+            -icon "${{ github.workspace }}/assets/gode.png" \
+            -release
 
+      # ------------------------------------------------------------
+      # Upload
+      # ------------------------------------------------------------
       - name: Upload package
         uses: actions/upload-artifact@v7
         with:
