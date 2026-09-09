@@ -12,6 +12,7 @@ import (
 	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/driver/desktop"
 	"fyne.io/fyne/v2/layout"
+	"fyne.io/fyne/v2/widget"
 )
 
 func main() {
@@ -37,21 +38,32 @@ func main() {
 	}
 	textEditor.OnStateChanged = updateWindowTitle
 	updateWindowTitle()
+	showUnsavedChanges := func(message string, next func()) {
+		prompt := dialog.NewCustomWithoutButtons("Unsaved changes", widget.NewLabel(message), myWindow)
+		discard := widget.NewButton("Discard changes", func() {
+			prompt.Hide()
+			next()
+		})
+		cancel := widget.NewButton("Cancel", prompt.Hide)
+		save := widget.NewButton("Save", func() {
+			if err := textEditor.Save(); err != nil {
+				prompt.Hide()
+				dialog.ShowError(err, myWindow)
+				return
+			}
+			prompt.Hide()
+			next()
+		})
+		save.Importance = widget.HighImportance
+		prompt.SetButtons([]fyne.CanvasObject{discard, cancel, save})
+		prompt.Show()
+	}
 	withSavedChanges := func(next func()) {
 		if !textEditor.Dirty {
 			next()
 			return
 		}
-		dialog.ShowConfirm("Save changes?", "Save changes to "+textEditor.FileName()+" before continuing?", func(save bool) {
-			if !save {
-				return
-			}
-			if err := textEditor.Save(); err != nil {
-				dialog.ShowError(err, myWindow)
-				return
-			}
-			next()
-		}, myWindow)
+		showUnsavedChanges("Save changes to "+textEditor.FileName()+" before continuing?", next)
 	}
 	tree := ui.NewTree(fileExplorer, func(node *explorer.Node) {
 		if !node.IsDir && node.Path == textEditor.SelectedPath {
@@ -80,16 +92,7 @@ func main() {
 			closeWindow()
 			return
 		}
-		dialog.ShowConfirm("Save changes?", "Save changes to "+textEditor.FileName()+" before closing?", func(save bool) {
-			if !save {
-				return
-			}
-			if err := textEditor.Save(); err != nil {
-				dialog.ShowError(err, myWindow)
-				return
-			}
-			closeWindow()
-		}, myWindow)
+		showUnsavedChanges("Save changes to "+textEditor.FileName()+" before closing?", closeWindow)
 	})
 	myWindow.SetMainMenu(fyne.NewMainMenu(fyne.NewMenu("File",
 		&fyne.MenuItem{
