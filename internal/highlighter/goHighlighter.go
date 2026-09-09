@@ -1,33 +1,13 @@
-package editor
+package highlighter
 
 import (
 	"go/scanner"
 	"go/token"
 )
 
-const tabWidth = 4
+type GoHighlighter struct{}
 
-type TokenSpan struct {
-	Start int
-	End   int
-	Kind  HighlightKind
-}
-
-type HighlightKind int
-
-const (
-	HighlightKeyword HighlightKind = iota
-	HighlightComment
-	HighlightString
-	HighlightNumber
-)
-
-type HighlightedLine struct {
-	Text  string
-	Spans []TokenSpan
-}
-
-func HighlightGo(source string) []HighlightedLine {
+func (GoHighlighter) Highlight(source string) []HighlightedLine {
 	lines := splitLines(source)
 	fileSet := token.NewFileSet()
 	file := fileSet.AddFile("source.go", -1, len(source))
@@ -57,7 +37,7 @@ func HighlightGo(source string) []HighlightedLine {
 			}
 			lineStart++
 		}
-		appendTokenSpans(lines, line, visualColumn(source[lineStart:location.Offset]), literal, kind)
+		appendTokenSpans(lines, line, VisualColumn(source[lineStart:location.Offset]), literal, kind)
 	}
 	return lines
 }
@@ -102,7 +82,7 @@ func appendTokenSpans(lines []HighlightedLine, line, column int, literal string,
 			continue
 		}
 		if character == '\t' {
-			column += tabWidth - column%tabWidth
+			column += TabWidth - column%TabWidth
 		} else {
 			column++
 		}
@@ -110,51 +90,4 @@ func appendTokenSpans(lines []HighlightedLine, line, column int, literal string,
 	if line >= 0 && line < len(lines) && segmentStart < column {
 		lines[line].Spans = append(lines[line].Spans, TokenSpan{Start: segmentStart, End: column, Kind: kind})
 	}
-}
-
-func PlainLines(source string) []HighlightedLine {
-	return splitLines(source)
-}
-
-func splitLines(source string) []HighlightedLine {
-	parts := make([]HighlightedLine, 0)
-	start := 0
-	for i, r := range source {
-		if r == '\n' {
-			parts = append(parts, HighlightedLine{Text: expandTabs(source[start:i])})
-			start = i + 1
-		}
-	}
-	parts = append(parts, HighlightedLine{Text: expandTabs(source[start:])})
-	return parts
-}
-
-func expandTabs(line string) string {
-	result := make([]rune, 0, len([]rune(line)))
-	column := 0
-	for _, character := range line {
-		if character == '\t' {
-			spaces := tabWidth - column%tabWidth
-			for i := 0; i < spaces; i++ {
-				result = append(result, ' ')
-			}
-			column += spaces
-			continue
-		}
-		result = append(result, character)
-		column++
-	}
-	return string(result)
-}
-
-func visualColumn(text string) int {
-	column := 0
-	for _, character := range text {
-		if character == '\t' {
-			column += tabWidth - column%tabWidth
-		} else {
-			column++
-		}
-	}
-	return column
 }

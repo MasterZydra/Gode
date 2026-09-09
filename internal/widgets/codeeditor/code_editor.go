@@ -1,7 +1,8 @@
-package editor
+package codeeditor
 
 import (
 	"fmt"
+	"gode/internal/highlighter"
 	"image/color"
 	"sort"
 	"strings"
@@ -29,8 +30,8 @@ type CodeEditor struct {
 	OnChanged         func(string)
 	OnCursorChanged   func()
 	focused           bool
-	languageGo        bool
-	lines             []HighlightedLine
+	highlighter       highlighter.Highlighter
+	lines             []highlighter.HighlightedLine
 	cursors           []cursorState
 	dragging          bool
 	shiftDown         bool
@@ -68,17 +69,17 @@ func (e *CodeEditor) Text() string {
 	return e.Buffer.String()
 }
 
-func (e *CodeEditor) SetLanguageGo(enabled bool) {
-	e.languageGo = enabled
+func (e *CodeEditor) SetHighlighter(syntaxHighlighter highlighter.Highlighter) {
+	e.highlighter = syntaxHighlighter
 	e.refreshHighlighting()
 	e.Refresh()
 }
 
 func (e *CodeEditor) refreshHighlighting() {
-	if e.languageGo {
-		e.lines = HighlightGo(e.Buffer.String())
+	if e.highlighter != nil {
+		e.lines = e.highlighter.Highlight(e.Buffer.String())
 	} else {
-		e.lines = PlainLines(e.Buffer.String())
+		e.lines = highlighter.PlainLines(e.Buffer.String())
 	}
 }
 
@@ -528,8 +529,8 @@ func (e *CodeEditor) selectionRectangles(cursor cursorState, lineHeight, lineNum
 		if selectionStart < selectionEnd {
 			localStart := selectionStart - offset
 			localEnd := selectionEnd - offset
-			startColumn := visualColumn(string([]rune(line)[:localStart]))
-			endColumn := visualColumn(string([]rune(line)[:localEnd]))
+			startColumn := highlighter.VisualColumn(string([]rune(line)[:localStart]))
+			endColumn := highlighter.VisualColumn(string([]rune(line)[:localEnd]))
 			rectangle := canvas.NewRectangle(color.NRGBA{R: 45, G: 90, B: 150, A: 180})
 			rectangle.Move(fyne.NewPos(lineNumberWidth+float32(startColumn)*charWidth, float32(lineIndex)*lineHeight))
 			rectangle.Resize(fyne.NewSize(float32(endColumn-startColumn)*charWidth, lineHeight))
@@ -551,9 +552,9 @@ func (e *CodeEditor) offsetForLineColumn(line, column int) int {
 	}
 	visual := 0
 	for index, character := range []rune(lines[line]) {
-		next := visualColumn(string(character))
+		next := highlighter.VisualColumn(string(character))
 		if character == '\t' {
-			next = tabWidth - visual%tabWidth
+			next = highlighter.TabWidth - visual%highlighter.TabWidth
 		}
 		if visual+next > column {
 			return offset + index
@@ -617,7 +618,7 @@ func (r *codeEditorRenderer) Layout(size fyne.Size) {
 		r.editor.Buffer.SetCursor(position)
 		line, rawColumn := r.editor.Buffer.CursorLineColumn()
 		lineText := lines[line]
-		column := visualColumn(string([]rune(lineText)[:rawColumn]))
+		column := highlighter.VisualColumn(string([]rune(lineText)[:rawColumn]))
 		cursor.Resize(fyne.NewSize(2, lineHeight))
 		cursor.Move(fyne.NewPos(lineNumberWidth+float32(column)*charWidth, float32(line)*lineHeight))
 		if r.editor.focused {
@@ -678,13 +679,13 @@ func (r *codeEditorRenderer) Refresh() {
 	r.Layout(r.editor.Size())
 }
 
-func spanColor(kind HighlightKind) color.Color {
+func spanColor(kind highlighter.HighlightKind) color.Color {
 	switch kind {
-	case HighlightComment:
+	case highlighter.HighlightComment:
 		return commentColor
-	case HighlightString:
+	case highlighter.HighlightString:
 		return stringColor
-	case HighlightNumber:
+	case highlighter.HighlightNumber:
 		return numberColor
 	default:
 		return keywordColor

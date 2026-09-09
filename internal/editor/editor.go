@@ -2,6 +2,8 @@ package editor
 
 import (
 	"fmt"
+	"gode/internal/highlighter"
+	"gode/internal/widgets/codeeditor"
 	"os"
 	"path/filepath"
 )
@@ -9,7 +11,7 @@ import (
 const MaxFileSize int64 = 5 * 1024 * 1024
 
 type Editor struct {
-	Widget         *CodeEditor
+	Widget         *codeeditor.CodeEditor
 	SelectedPath   string
 	Dirty          bool
 	OnStateChanged func()
@@ -17,7 +19,7 @@ type Editor struct {
 }
 
 func New() *Editor {
-	codeEditor := NewCodeEditor()
+	codeEditor := codeeditor.NewCodeEditor()
 	editor := &Editor{Widget: codeEditor}
 	codeEditor.OnChanged = func(string) {
 		if !editor.loading {
@@ -45,7 +47,7 @@ func (e *Editor) Load(path string) error {
 	}
 
 	e.loading = true
-	e.Widget.SetLanguageGo(filepath.Ext(path) == ".go")
+	e.Widget.SetHighlighter(highlighter.HighlighterForExtension(filepath.Ext(path)))
 	e.Widget.SetText(string(contents))
 	e.loading = false
 	e.SelectedPath = path
@@ -76,7 +78,7 @@ func (e *Editor) Clear() {
 	e.SelectedPath = ""
 	e.Dirty = false
 	e.loading = true
-	e.Widget.SetLanguageGo(false)
+	e.Widget.SetHighlighter(nil)
 	e.Widget.SetText("")
 	e.loading = false
 	e.notifyStateChanged()
