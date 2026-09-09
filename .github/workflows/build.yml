@@ -60,7 +60,7 @@ jobs:
         run: go build ./...
 
       - name: Package application
-        run: fyne package -os ${{ matrix.fyne_os }} -src cmd/gode -name gode -app-id com.gode.editor -icon assets/gode.png -release
+        run: fyne package -os ${{ matrix.fyne_os }} -src cmd/gode -name gode -app-id com.gode.editor -icon "${{ github.workspace }}/assets/gode.png" -release
 
       - name: Upload package
         uses: actions/upload-artifact@v4
