@@ -1,0 +1,68 @@
+name: Build Desktop Packages
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  package:
+    name: Package ${{ matrix.name }}
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Linux
+            runner: ubuntu-latest
+            fyne_os: linux
+            artifact: gode-linux
+          - name: macOS
+            runner: macos-latest
+            fyne_os: darwin
+            artifact: gode-macos
+          - name: Windows
+            runner: windows-latest
+            fyne_os: windows
+            artifact: gode-windows
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Install Fyne packaging tool
+        run: go install fyne.io/tools/cmd/fyne@latest
+
+      - name: Add Go tools to PATH
+        shell: bash
+        run: echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
+
+      - name: Run tests
+        run: go test ./...
+
+      - name: Build project
+        run: go build ./...
+
+      - name: Package application
+        run: fyne package -os ${{ matrix.fyne_os }} -src cmd/gode -name gode -app-id com.gode.editor -icon assets/gode.png -release
+
+      - name: Upload package
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact }}
+          path: |
+            *.app
+            *.exe
+            *.tar.gz
+            *.zip
+          if-no-files-found: error
