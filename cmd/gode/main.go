@@ -2,12 +2,9 @@ package main
 
 import (
 	"fmt"
-	"go/scanner"
-	"go/token"
 	"gode/internal/explorer"
 	"image/color"
 	"os"
-	"path/filepath"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
@@ -22,49 +19,7 @@ type folderTheme struct {
 	base fyne.Theme
 }
 
-var goKeywordStyle = &widget.CustomTextGridStyle{
-	FGColor: color.NRGBA{R: 0, G: 102, B: 204, A: 255},
-}
-
 const maxEditorFileSize int64 = 5 * 1024 * 1024
-
-func highlightGoKeywords(textGrid *widget.TextGrid, source []byte) {
-	defer textGrid.Refresh()
-
-	fileSet := token.NewFileSet()
-	file := fileSet.AddFile("source.go", -1, len(source))
-	tabWidth := textGrid.TabWidth
-	if tabWidth == 0 {
-		tabWidth = 4
-	}
-	var lexer scanner.Scanner
-	lexer.Init(file, source, nil, scanner.ScanComments)
-
-	for {
-		tokenPosition, tokenType, literal := lexer.Scan()
-		if tokenType == token.EOF {
-			return
-		}
-		if !tokenType.IsKeyword() {
-			continue
-		}
-
-		position := fileSet.Position(tokenPosition)
-		lineStart := position.Offset - (position.Column - 1)
-		column := 0
-		for _, character := range string(source[lineStart:position.Offset]) {
-			if character == '\t' {
-				column += tabWidth - column%tabWidth
-			} else {
-				column++
-			}
-		}
-
-		for keywordColumn := 0; keywordColumn < len([]rune(literal)); keywordColumn++ {
-			textGrid.SetStyle(position.Line-1, column+keywordColumn, goKeywordStyle)
-		}
-	}
-}
 
 func (t folderTheme) Color(name fyne.ThemeColorName, variant fyne.ThemeVariant) color.Color {
 	return t.base.Color(name, variant)
@@ -160,9 +115,10 @@ func main() {
 			o.(*widget.Label).SetText(text)
 		})
 
-	textGrid := widget.NewTextGrid()
-	textGrid.Scroll = fyne.ScrollBoth
-	textGrid.ShowLineNumbers = true
+	textEditor := widget.NewMultiLineEntry()
+	textEditor.Wrapping = fyne.TextWrapOff
+	textEditor.Scroll = fyne.ScrollBoth
+	textEditor.TextStyle.Monospace = true
 	tree.OnSelected = func(id widget.TreeNodeID) {
 		node := findNode(id)
 		if node == nil {
@@ -188,12 +144,9 @@ func main() {
 			dialog.ShowError(err, myWindow)
 			return
 		}
-		textGrid.SetText(string(contents))
-		if filepath.Ext(node.Path) == ".go" {
-			highlightGoKeywords(textGrid, contents)
-		}
+		textEditor.SetText(string(contents))
 	}
-	textGridContainer := container.New(layout.NewCustomPaddedLayout(10, 10, 10, 10), textGrid)
-	myWindow.SetContent(container.NewBorder(nil, nil, tree, nil, textGridContainer))
+	textEditorContainer := container.New(layout.NewCustomPaddedLayout(10, 10, 10, 10), textEditor)
+	myWindow.SetContent(container.NewBorder(nil, nil, tree, nil, textEditorContainer))
 	myWindow.ShowAndRun()
 }
