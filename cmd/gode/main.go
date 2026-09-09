@@ -37,18 +37,59 @@ func main() {
 	}
 	textEditor.OnStateChanged = updateWindowTitle
 	updateWindowTitle()
+	withSavedChanges := func(next func()) {
+		if !textEditor.Dirty {
+			next()
+			return
+		}
+		dialog.ShowConfirm("Save changes?", "Save changes to "+textEditor.FileName()+" before continuing?", func(save bool) {
+			if !save {
+				return
+			}
+			if err := textEditor.Save(); err != nil {
+				dialog.ShowError(err, myWindow)
+				return
+			}
+			next()
+		}, myWindow)
+	}
 	tree := ui.NewTree(fileExplorer, func(node *explorer.Node) {
-		if node.IsDir {
-			textEditor.Clear()
-			updateWindowTitle()
+		if !node.IsDir && node.Path == textEditor.SelectedPath {
 			return
 		}
+		withSavedChanges(func() {
+			if node.IsDir {
+				textEditor.Clear()
+				updateWindowTitle()
+				return
+			}
 
-		if err := textEditor.Load(node.Path); err != nil {
-			dialog.ShowError(err, myWindow)
+			if err := textEditor.Load(node.Path); err != nil {
+				dialog.ShowError(err, myWindow)
+				return
+			}
+			updateWindowTitle()
+		})
+	})
+	myWindow.SetCloseIntercept(func() {
+		closeWindow := func() {
+			myWindow.SetCloseIntercept(nil)
+			myWindow.Close()
+		}
+		if !textEditor.Dirty {
+			closeWindow()
 			return
 		}
-		updateWindowTitle()
+		dialog.ShowConfirm("Save changes?", "Save changes to "+textEditor.FileName()+" before closing?", func(save bool) {
+			if !save {
+				return
+			}
+			if err := textEditor.Save(); err != nil {
+				dialog.ShowError(err, myWindow)
+				return
+			}
+			closeWindow()
+		}, myWindow)
 	})
 	myWindow.SetMainMenu(fyne.NewMainMenu(fyne.NewMenu("File",
 		&fyne.MenuItem{
@@ -62,13 +103,15 @@ func main() {
 					if selected == nil {
 						return
 					}
-					if err := fileExplorer.SetRoot(selected.Path()); err != nil {
-						dialog.ShowError(err, myWindow)
-						return
-					}
-					tree.Refresh()
-					textEditor.Clear()
-					updateWindowTitle()
+					withSavedChanges(func() {
+						if err := fileExplorer.SetRoot(selected.Path()); err != nil {
+							dialog.ShowError(err, myWindow)
+							return
+						}
+						tree.Refresh()
+						textEditor.Clear()
+						updateWindowTitle()
+					})
 				}, myWindow)
 			},
 			Shortcut: &desktop.CustomShortcut{KeyName: fyne.KeyO, Modifier: fyne.KeyModifierControl},
