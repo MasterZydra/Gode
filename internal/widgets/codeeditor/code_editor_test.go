@@ -4,12 +4,25 @@ import (
 	"os"
 	"testing"
 
+	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
 )
 
 func TestMain(main *testing.M) {
 	app.NewWithID("com.gode.editor.tests")
 	os.Exit(main.Run())
+}
+
+func TestDoubleClickSelectsWord(t *testing.T) {
+	editor := NewCodeEditor()
+	editor.SetText("hello world")
+	position := fyne.NewPos(editor.lineNumberWidth()+editor.charWidth()*7, 0)
+
+	editor.DoubleTapped(&fyne.PointEvent{Position: position})
+
+	if got := editor.selectedText(); got != "world" {
+		t.Fatalf("selected text = %q, want %q", got, "world")
+	}
 }
 
 func TestCodeEditorReplacesSelections(t *testing.T) {

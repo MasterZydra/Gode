@@ -45,10 +45,11 @@ type cursorState struct {
 }
 
 var (
-	_ fyne.Focusable    = (*CodeEditor)(nil)
-	_ desktop.Keyable   = (*CodeEditor)(nil)
-	_ desktop.Mouseable = (*CodeEditor)(nil)
-	_ fyne.Draggable    = (*CodeEditor)(nil)
+	_ fyne.Focusable      = (*CodeEditor)(nil)
+	_ desktop.Keyable     = (*CodeEditor)(nil)
+	_ desktop.Mouseable   = (*CodeEditor)(nil)
+	_ fyne.Draggable      = (*CodeEditor)(nil)
+	_ fyne.DoubleTappable = (*CodeEditor)(nil)
 )
 
 func NewCodeEditor() *CodeEditor {
@@ -314,6 +315,27 @@ func (e *CodeEditor) Dragged(event *fyne.DragEvent) {
 	e.Refresh()
 }
 func (e *CodeEditor) DragEnd() { e.dragging = false }
+
+func (e *CodeEditor) DoubleTapped(event *fyne.PointEvent) {
+	position := e.cursorOffsetFromPosition(event.Position)
+	runes := []rune(e.Text())
+	if position >= len(runes) {
+		return
+	}
+	start, end := position, position+1
+	if isWordRune(runes[position]) {
+		for start > 0 && isWordRune(runes[start-1]) {
+			start--
+		}
+		end = position
+		for end < len(runes) && isWordRune(runes[end]) {
+			end++
+		}
+	}
+	e.cursors = []cursorState{{position: end, anchor: start}}
+	e.syncPrimaryCursor()
+	e.Refresh()
+}
 
 func (e *CodeEditor) cursorOffsetFromPosition(position fyne.Position) int {
 	lineHeight := e.lineHeight()
