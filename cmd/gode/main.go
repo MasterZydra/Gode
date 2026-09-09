@@ -17,7 +17,7 @@ import (
 func main() {
 	myApp := app.NewWithID("com.gode.editor")
 	myApp.Settings().SetTheme(ui.NewFolderTheme())
-	myWindow := myApp.NewWindow("Table Widget")
+	myWindow := myApp.NewWindow("Gode")
 	myWindow.Resize(fyne.NewSize(1440, 801))
 
 	fileExplorer := explorer.NewExplorer("")
@@ -35,7 +35,7 @@ func main() {
 	updateWindowTitle := func() {
 		myWindow.SetTitle(textEditor.Title())
 	}
-	textEditor.Widget.OnChanged = func(string) { updateWindowTitle() }
+	textEditor.OnStateChanged = updateWindowTitle
 	updateWindowTitle()
 	tree := ui.NewTree(fileExplorer, func(node *explorer.Node) {
 		if node.IsDir {
@@ -83,7 +83,7 @@ func main() {
 			},
 			Shortcut: &desktop.CustomShortcut{KeyName: fyne.KeyS, Modifier: fyne.KeyModifierControl},
 		})))
-	textEditorContainer := container.New(layout.NewCustomPaddedLayout(10, 10, 10, 10), textEditor.Widget)
+	textEditorContainer := container.New(layout.NewCustomPaddedLayout(10, 10, 10, 10), container.NewScroll(textEditor.Widget))
 	myWindow.SetContent(container.NewBorder(nil, nil, tree, nil, textEditorContainer))
 	myWindow.ShowAndRun()
 }
