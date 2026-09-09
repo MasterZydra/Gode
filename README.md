@@ -12,9 +12,9 @@ The long-term goal is to evolve Gode into a lightweight IDE.
 - Alt + click adds another cursor.
 
 ### Clipboard and editing
-- Ctrl+C copies the selected text.
-- Ctrl+C without a selection copies the current line.
-- Ctrl+X cuts the selected text.
+- Ctrl+A selects the entire file.
+- Ctrl+C copies the selected text
+- Ctrl+X cuts the selected text
 - Ctrl+V pastes at all active cursors.
 - Ctrl+V after copying a line inserts it directly below the current line.
 - Ctrl+V works for the final line even without a trailing newline.

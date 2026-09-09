@@ -254,9 +254,19 @@ func (e *CodeEditor) TypedShortcut(shortcut fyne.Shortcut) {
 		}
 		return
 	case *fyne.ShortcutCut:
-		e.lineClipboard = false
-		clipboard.SetContent(e.selectedText())
-		e.deleteSelections()
+		if selected := e.selectedText(); selected != "" {
+			e.lineClipboard = false
+			clipboard.SetContent(selected)
+			e.deleteSelections()
+		} else {
+			e.lineClipboardText = e.currentLinesText()
+			e.lineClipboard = true
+			clipboard.SetContent(e.lineClipboardText)
+			e.cutCurrentLines()
+		}
+	case *fyne.ShortcutSelectAll:
+		e.selectAll()
+		return
 	case *fyne.ShortcutPaste:
 		if e.lineClipboard {
 			e.pasteLinesBelow()
@@ -448,6 +458,33 @@ func (e *CodeEditor) selectedText() string {
 		}
 	}
 	return strings.Join(parts, "\n")
+}
+
+func (e *CodeEditor) selectAll() {
+	end := len([]rune(e.Text()))
+	e.cursors = []cursorState{{position: end, anchor: 0}}
+	e.syncPrimaryCursor()
+	e.Refresh()
+}
+
+func (e *CodeEditor) cutCurrentLines() {
+	runes := []rune(e.Text())
+	seen := make(map[int]bool)
+	for index, cursor := range e.cursors {
+		line, start, end := e.lineBoundsAt(cursor.position)
+		if seen[line] {
+			e.cursors[index] = cursorState{position: start, anchor: start}
+			continue
+		}
+		seen[line] = true
+		if end < len(runes) {
+			end++
+		} else if start > 0 {
+			start--
+		}
+		e.cursors[index] = cursorState{position: end, anchor: start}
+	}
+	e.deleteSelections()
 }
 
 func (e *CodeEditor) currentLinesText() string {
