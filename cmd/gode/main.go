@@ -119,6 +119,27 @@ func main() {
 	textEditor.Wrapping = fyne.TextWrapOff
 	textEditor.Scroll = fyne.ScrollBoth
 	textEditor.TextStyle.Monospace = true
+	selectedFileName := ""
+	dirty := false
+	loadingFile := false
+	updateWindowTitle := func() {
+		if selectedFileName == "" {
+			myWindow.SetTitle("Gode")
+			return
+		}
+		if dirty {
+			myWindow.SetTitle("• " + selectedFileName)
+			return
+		}
+		myWindow.SetTitle(selectedFileName)
+	}
+	textEditor.OnChanged = func(string) {
+		if loadingFile {
+			return
+		}
+		dirty = true
+		updateWindowTitle()
+	}
 	tree.OnSelected = func(id widget.TreeNodeID) {
 		node := findNode(id)
 		if node == nil {
@@ -126,6 +147,9 @@ func main() {
 		}
 		if node.IsDir {
 			tree.ToggleBranch(id)
+			selectedFileName = ""
+			dirty = false
+			updateWindowTitle()
 			return
 		}
 
@@ -144,7 +168,12 @@ func main() {
 			dialog.ShowError(err, myWindow)
 			return
 		}
+		loadingFile = true
 		textEditor.SetText(string(contents))
+		loadingFile = false
+		selectedFileName = node.Name
+		dirty = false
+		updateWindowTitle()
 	}
 	textEditorContainer := container.New(layout.NewCustomPaddedLayout(10, 10, 10, 10), textEditor)
 	myWindow.SetContent(container.NewBorder(nil, nil, tree, nil, textEditorContainer))
