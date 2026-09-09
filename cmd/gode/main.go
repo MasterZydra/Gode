@@ -95,9 +95,15 @@ func main() {
 	myWindow := myApp.NewWindow("Table Widget")
 	myWindow.Resize(fyne.NewSize(1440, 801))
 
-	fileExplorer := explorer.NewExplorer("/home/david/Documents/fyne/gode")
-	if err := fileExplorer.Update(); err != nil {
-		panic(err)
+	fileExplorer := explorer.NewExplorer("")
+	if len(os.Args) > 1 {
+		rootPath := os.Args[1]
+		if fileInfo, err := os.Stat(rootPath); err == nil && fileInfo.IsDir() {
+			fileExplorer = explorer.NewExplorer(rootPath)
+			if err := fileExplorer.Update(); err != nil {
+				fileExplorer = explorer.NewExplorer("")
+			}
+		}
 	}
 
 	findNode := func(id widget.TreeNodeID) *explorer.Node {
