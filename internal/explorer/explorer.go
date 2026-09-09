@@ -26,6 +26,11 @@ func (explorer *Explorer) Update() error {
 	return nil
 }
 
+func (explorer *Explorer) SetRoot(rootDir string) error {
+	explorer.rootDir = rootDir
+	return explorer.Update()
+}
+
 func readNodes(dir string) ([]*Node, error) {
 	entries, err := os.ReadDir(dir)
 	if err != nil {

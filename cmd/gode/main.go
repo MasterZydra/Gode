@@ -15,7 +15,7 @@ import (
 )
 
 func main() {
-	myApp := app.New()
+	myApp := app.NewWithID("com.gode.editor")
 	myApp.Settings().SetTheme(ui.NewFolderTheme())
 	myWindow := myApp.NewWindow("Table Widget")
 	myWindow.Resize(fyne.NewSize(1440, 801))
@@ -37,17 +37,6 @@ func main() {
 	}
 	textEditor.Widget.OnChanged = func(string) { updateWindowTitle() }
 	updateWindowTitle()
-	saveShortcut := &desktop.CustomShortcut{KeyName: fyne.KeyS, Modifier: fyne.KeyModifierControl}
-	myWindow.SetMainMenu(fyne.NewMainMenu(fyne.NewMenu("File", &fyne.MenuItem{
-		Label: "Save",
-		Action: func() {
-			if err := textEditor.Save(); err != nil {
-				dialog.ShowError(err, myWindow)
-			}
-			updateWindowTitle()
-		},
-		Shortcut: saveShortcut,
-	})))
 	tree := ui.NewTree(fileExplorer, func(node *explorer.Node) {
 		if node.IsDir {
 			textEditor.Clear()
@@ -61,6 +50,39 @@ func main() {
 		}
 		updateWindowTitle()
 	})
+	myWindow.SetMainMenu(fyne.NewMainMenu(fyne.NewMenu("File",
+		&fyne.MenuItem{
+			Label: "Open Folder",
+			Action: func() {
+				dialog.ShowFolderOpen(func(selected fyne.ListableURI, err error) {
+					if err != nil {
+						dialog.ShowError(err, myWindow)
+						return
+					}
+					if selected == nil {
+						return
+					}
+					if err := fileExplorer.SetRoot(selected.Path()); err != nil {
+						dialog.ShowError(err, myWindow)
+						return
+					}
+					tree.Refresh()
+					textEditor.Clear()
+					updateWindowTitle()
+				}, myWindow)
+			},
+			Shortcut: &desktop.CustomShortcut{KeyName: fyne.KeyO, Modifier: fyne.KeyModifierControl},
+		},
+		&fyne.MenuItem{
+			Label: "Save",
+			Action: func() {
+				if err := textEditor.Save(); err != nil {
+					dialog.ShowError(err, myWindow)
+				}
+				updateWindowTitle()
+			},
+			Shortcut: &desktop.CustomShortcut{KeyName: fyne.KeyS, Modifier: fyne.KeyModifierControl},
+		})))
 	textEditorContainer := container.New(layout.NewCustomPaddedLayout(10, 10, 10, 10), textEditor.Widget)
 	myWindow.SetContent(container.NewBorder(nil, nil, tree, nil, textEditorContainer))
 	myWindow.ShowAndRun()
