@@ -1,9 +1,9 @@
 package main
 
 import (
-	"fmt"
+	"gode/internal/editor"
 	"gode/internal/explorer"
-	"image/color"
+	"gode/internal/ui"
 	"os"
 
 	"fyne.io/fyne/v2"
@@ -12,42 +12,11 @@ import (
 	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/driver/desktop"
 	"fyne.io/fyne/v2/layout"
-	"fyne.io/fyne/v2/theme"
-	"fyne.io/fyne/v2/widget"
 )
-
-type folderTheme struct {
-	base fyne.Theme
-}
-
-const maxEditorFileSize int64 = 5 * 1024 * 1024
-
-func (t folderTheme) Color(name fyne.ThemeColorName, variant fyne.ThemeVariant) color.Color {
-	return t.base.Color(name, variant)
-}
-
-func (t folderTheme) Font(style fyne.TextStyle) fyne.Resource {
-	return t.base.Font(style)
-}
-
-func (t folderTheme) Icon(name fyne.ThemeIconName) fyne.Resource {
-	switch name {
-	case theme.IconNameNavigateNext:
-		return theme.FolderIcon()
-	case theme.IconNameMoveDown:
-		return theme.FolderOpenIcon()
-	default:
-		return t.base.Icon(name)
-	}
-}
-
-func (t folderTheme) Size(name fyne.ThemeSizeName) float32 {
-	return t.base.Size(name)
-}
 
 func main() {
 	myApp := app.New()
-	myApp.Settings().SetTheme(folderTheme{base: theme.DefaultTheme()})
+	myApp.Settings().SetTheme(ui.NewFolderTheme())
 	myWindow := myApp.NewWindow("Table Widget")
 	myWindow.Resize(fyne.NewSize(1440, 801))
 
@@ -62,147 +31,37 @@ func main() {
 		}
 	}
 
-	findNode := func(id widget.TreeNodeID) *explorer.Node {
-		var find func(nodes []*explorer.Node) *explorer.Node
-		find = func(nodes []*explorer.Node) *explorer.Node {
-			for _, node := range nodes {
-				if node.Path == string(id) {
-					return node
-				}
-				if found := find(node.Children); found != nil {
-					return found
-				}
-			}
-			return nil
-		}
-		return find(fileExplorer.Nodes)
-	}
-
-	tree := widget.NewTree(
-		func(id widget.TreeNodeID) []widget.TreeNodeID {
-			var nodes []*explorer.Node
-			if id == "" {
-				nodes = fileExplorer.Nodes
-			} else if node := findNode(id); node != nil {
-				nodes = node.Children
-			}
-
-			children := make([]widget.TreeNodeID, 0, len(nodes))
-			for _, node := range nodes {
-				children = append(children, widget.TreeNodeID(node.Path))
-			}
-			return children
-		},
-		func(id widget.TreeNodeID) bool {
-			return id == "" || func() bool {
-				node := findNode(id)
-				return node != nil && node.IsDir
-			}()
-		},
-		func(branch bool) fyne.CanvasObject {
-			if branch {
-				return widget.NewLabel("Branch template")
-			}
-			return widget.NewLabel("Leaf template")
-		},
-		func(id widget.TreeNodeID, branch bool, o fyne.CanvasObject) {
-			text := string(id)
-			if node := findNode(id); node != nil {
-				text = node.Name
-			}
-			// if branch {
-			// 	text += " (branch)"
-			// }
-			o.(*widget.Label).SetText(text)
-		})
-
-	textEditor := widget.NewMultiLineEntry()
-	textEditor.Wrapping = fyne.TextWrapOff
-	textEditor.Scroll = fyne.ScrollBoth
-	textEditor.TextStyle.Monospace = true
-	selectedFileName := ""
-	selectedFilePath := ""
-	dirty := false
-	loadingFile := false
+	textEditor := editor.New()
 	updateWindowTitle := func() {
-		if selectedFileName == "" {
-			myWindow.SetTitle("Gode")
-			return
-		}
-		if dirty {
-			myWindow.SetTitle("• " + selectedFileName)
-			return
-		}
-		myWindow.SetTitle(selectedFileName)
+		myWindow.SetTitle(textEditor.Title())
 	}
-	textEditor.OnChanged = func(string) {
-		if loadingFile {
-			return
-		}
-		dirty = true
-		updateWindowTitle()
-	}
-	saveFile := func() {
-		if selectedFilePath == "" {
-			return
-		}
-
-		fileInfo, err := os.Stat(selectedFilePath)
-		if err != nil {
-			dialog.ShowError(err, myWindow)
-			return
-		}
-		if err := os.WriteFile(selectedFilePath, []byte(textEditor.Text), fileInfo.Mode().Perm()); err != nil {
-			dialog.ShowError(err, myWindow)
-			return
-		}
-		dirty = false
-		updateWindowTitle()
-	}
+	textEditor.Widget.OnChanged = func(string) { updateWindowTitle() }
+	updateWindowTitle()
 	saveShortcut := &desktop.CustomShortcut{KeyName: fyne.KeyS, Modifier: fyne.KeyModifierControl}
 	myWindow.SetMainMenu(fyne.NewMainMenu(fyne.NewMenu("File", &fyne.MenuItem{
-		Label:    "Save",
-		Action:   saveFile,
+		Label: "Save",
+		Action: func() {
+			if err := textEditor.Save(); err != nil {
+				dialog.ShowError(err, myWindow)
+			}
+			updateWindowTitle()
+		},
 		Shortcut: saveShortcut,
 	})))
-	tree.OnSelected = func(id widget.TreeNodeID) {
-		node := findNode(id)
-		if node == nil {
-			return
-		}
+	tree := ui.NewTree(fileExplorer, func(node *explorer.Node) {
 		if node.IsDir {
-			tree.ToggleBranch(id)
-			selectedFileName = ""
-			selectedFilePath = ""
-			dirty = false
+			textEditor.Clear()
 			updateWindowTitle()
 			return
 		}
 
-		fileInfo, err := os.Stat(node.Path)
-		if err != nil {
+		if err := textEditor.Load(node.Path); err != nil {
 			dialog.ShowError(err, myWindow)
 			return
 		}
-		if fileInfo.Size() > maxEditorFileSize {
-			dialog.ShowError(fmt.Errorf("file is too large to display (maximum %d MiB)", maxEditorFileSize/(1024*1024)), myWindow)
-			return
-		}
-
-		contents, err := os.ReadFile(node.Path)
-		if err != nil {
-			dialog.ShowError(err, myWindow)
-			return
-		}
-		loadingFile = true
-		textEditor.SetText(string(contents))
-		loadingFile = false
-		selectedFileName = node.Name
-		selectedFilePath = node.Path
-		dirty = false
 		updateWindowTitle()
-	}
-	textEditorContainer := container.New(layout.NewCustomPaddedLayout(10, 10, 10, 10), textEditor)
+	})
+	textEditorContainer := container.New(layout.NewCustomPaddedLayout(10, 10, 10, 10), textEditor.Widget)
 	myWindow.SetContent(container.NewBorder(nil, nil, tree, nil, textEditorContainer))
 	myWindow.ShowAndRun()
 }
