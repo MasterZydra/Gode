@@ -67,7 +67,7 @@ jobs:
         with:
           name: ${{ matrix.artifact }}
           path: |
-            ${{ runner.os == 'Linux' && '*' || ''}}
+            ${{ runner.os == 'Linux' && '*.tar.xz' || ''}}
             ${{ runner.os == 'Windows' && '*.exe' || '' }}
             ${{ runner.os == 'macOS' && '*.app' || '' }}
             *.tar.gz
