@@ -39,6 +39,32 @@ func TestHighlightGoTokenKinds(t *testing.T) {
 	}
 }
 
+func TestHighlightJSONLiteralsAndKeywords(t *testing.T) {
+	lines := JSON{}.Highlight("{\n\t\"message\": \"hello \\\"world\\\"\",\n\t\"count\": -12.5e+2,\n\t\"enabled\": true,\n\t\"nothing\": null\n}")
+
+	if len(lines) != 6 {
+		t.Fatalf("got %d lines, want 6", len(lines))
+	}
+	if len(lines[1].Spans) != 2 || lines[1].Spans[0].Kind != HighlightString || lines[1].Spans[1].Kind != HighlightString {
+		t.Fatalf("string spans = %#v", lines[1].Spans)
+	}
+	if lines[2].Spans[0] != (TokenSpan{Start: 4, End: 11, Kind: HighlightString}) || lines[2].Spans[1] != (TokenSpan{Start: 13, End: 21, Kind: HighlightNumber}) {
+		t.Fatalf("number spans = %#v", lines[2].Spans)
+	}
+	if len(lines[3].Spans) != 2 || lines[3].Spans[1].Kind != HighlightKeyword {
+		t.Fatalf("boolean line spans = %#v", lines[3].Spans)
+	}
+	if len(lines[4].Spans) != 2 || lines[4].Spans[1].Kind != HighlightKeyword {
+		t.Fatalf("null line spans = %#v", lines[4].Spans)
+	}
+}
+
+func TestHighlighterForExtensionRecognizesJSON(t *testing.T) {
+	if _, ok := HighlighterForExtension(".json").(JSON); !ok {
+		t.Fatal("JSON extension did not use the JSON highlighter")
+	}
+}
+
 func TestHighlightDockerfileKeywordsAndComments(t *testing.T) {
 	lines := Dockerfile{}.Highlight("FROM alpine:latest\n# comment\nRUN echo hello # inline comment\nENV VALUE=\"#not a comment\"")
 
