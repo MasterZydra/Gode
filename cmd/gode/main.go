@@ -1,6 +1,7 @@
 package main
 
 import (
+	"gode/internal/commands"
 	"gode/internal/editor"
 	"gode/internal/explorer"
 	"gode/internal/ui"
@@ -33,6 +34,16 @@ func main() {
 	}
 
 	textEditor := editor.New()
+	commandRegistry := commands.NewRegistry()
+	commandPalette := commands.NewPalette(commandRegistry, myWindow)
+	commandRegistry.Register(commands.Command{
+		Name: "Format Document",
+		Action: func() {
+			if err := textEditor.Format(); err != nil {
+				dialog.ShowError(err, myWindow)
+			}
+		},
+	})
 	updateWindowTitle := func() {
 		myWindow.SetTitle(textEditor.Title())
 	}
@@ -110,7 +121,7 @@ func main() {
 		}
 		showUnsavedChanges("Save changes to "+textEditor.FileName()+" before closing?", closeWindow)
 	})
-	myWindow.SetMainMenu(fyne.NewMainMenu(fyne.NewMenu("File",
+	fileMenu := fyne.NewMenu("File",
 		&fyne.MenuItem{
 			Label: "Open Folder",
 			Action: func() {
@@ -144,7 +155,20 @@ func main() {
 				updateWindowTitle()
 			},
 			Shortcut: &desktop.CustomShortcut{KeyName: fyne.KeyS, Modifier: fyne.KeyModifierControl},
-		})))
+		},
+	)
+
+	toolsMenu := fyne.NewMenu("Tools",
+		&fyne.MenuItem{
+			Label:    "Command Palette",
+			Action:   commandPalette.Show,
+			Shortcut: &desktop.CustomShortcut{KeyName: fyne.KeyP, Modifier: fyne.KeyModifierControl | fyne.KeyModifierShift},
+		},
+	)
+
+	mainMenu := fyne.NewMainMenu(fileMenu, toolsMenu)
+
+	myWindow.SetMainMenu(mainMenu)
 	textEditorContainer := container.New(layout.NewCustomPaddedLayout(10, 10, 10, 10), editorScroll)
 	myWindow.SetContent(container.NewBorder(nil, nil, tree, nil, textEditorContainer))
 	myWindow.ShowAndRun()

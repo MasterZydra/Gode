@@ -2,6 +2,7 @@ package editor
 
 import (
 	"fmt"
+	"gode/internal/formatter"
 	"gode/internal/highlighter"
 	"gode/internal/widgets/codeeditor"
 	"os"
@@ -70,6 +71,24 @@ func (e *Editor) Save() error {
 	}
 
 	e.Dirty = false
+	e.notifyStateChanged()
+	return nil
+}
+
+func (e *Editor) Format() error {
+	if e.SelectedPath == "" {
+		return fmt.Errorf("no file selected")
+	}
+
+	formatted, err := formatter.Format(e.SelectedPath, e.Widget.Text())
+	if err != nil {
+		return err
+	}
+	if formatted == e.Widget.Text() {
+		return nil
+	}
+	e.Widget.SetText(formatted)
+	e.Dirty = true
 	e.notifyStateChanged()
 	return nil
 }

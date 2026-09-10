@@ -11,6 +11,10 @@ The editor has built-in code highlighting for
 
 ## Shortcuts and editing features
 
+### Commands
+- Ctrl+Shift+P opens the command palette.
+- Format Document formats the current Go or JSON file.
+
 ### Selection and cursors
 - Shift + arrow keys extend the current selection.
 - Shift + click extends the active selection.
