@@ -4,6 +4,11 @@ A lightweight text editor built with Go and powered by the Fyne GUI toolkit.
 
 The long-term goal is to evolve Gode into a lightweight IDE.
 
+## Code highlighting features
+The editor has built-in code highlighting for
+- Go
+- Dockerfile
+
 ## Shortcuts and editing features
 
 ### Selection and cursors
