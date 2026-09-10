@@ -66,6 +66,19 @@ func main() {
 		showUnsavedChanges("Save changes to "+textEditor.FileName()+" before continuing?", next)
 	}
 	editorScroll := container.NewScroll(textEditor.Widget)
+	textEditor.Widget.OnCursorChanged = func() {
+		if editorScroll.Size().Height == 0 {
+			return
+		}
+		cursorPosition, cursorSize := textEditor.Widget.CursorBounds()
+		offset := editorScroll.Offset
+		if cursorPosition.Y < offset.Y {
+			offset.Y = cursorPosition.Y
+		} else if cursorPosition.Y+cursorSize.Height > offset.Y+editorScroll.Size().Height {
+			offset.Y = cursorPosition.Y + cursorSize.Height - editorScroll.Size().Height
+		}
+		editorScroll.ScrollToOffset(offset)
+	}
 	tree := ui.NewTree(fileExplorer, func(node *explorer.Node) {
 		if !node.IsDir && node.Path == textEditor.SelectedPath {
 			return

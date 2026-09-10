@@ -70,6 +70,19 @@ func (e *CodeEditor) Text() string {
 	return e.Buffer.String()
 }
 
+func (e *CodeEditor) CursorBounds() (fyne.Position, fyne.Size) {
+	if len(e.cursors) == 0 {
+		return fyne.Position{}, fyne.Size{}
+	}
+
+	position := e.cursors[0].position
+	e.Buffer.SetCursor(position)
+	line, rawColumn := e.Buffer.CursorLineColumn()
+	lineText := e.Buffer.Lines()[line]
+	column := highlighter.VisualColumn(string([]rune(lineText)[:rawColumn]))
+	return fyne.NewPos(e.lineNumberWidth()+float32(column)*e.charWidth(), float32(line)*e.lineHeight()), fyne.NewSize(2, e.lineHeight())
+}
+
 func (e *CodeEditor) SetHighlighter(syntaxHighlighter highlighter.Highlighter) {
 	e.highlighter = syntaxHighlighter
 	e.refreshHighlighting()
