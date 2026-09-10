@@ -65,6 +65,7 @@ func main() {
 		}
 		showUnsavedChanges("Save changes to "+textEditor.FileName()+" before continuing?", next)
 	}
+	editorScroll := container.NewScroll(textEditor.Widget)
 	tree := ui.NewTree(fileExplorer, func(node *explorer.Node) {
 		if !node.IsDir && node.Path == textEditor.SelectedPath {
 			return
@@ -72,6 +73,7 @@ func main() {
 		withSavedChanges(func() {
 			if node.IsDir {
 				textEditor.Clear()
+				editorScroll.ScrollToTop()
 				updateWindowTitle()
 				return
 			}
@@ -80,6 +82,7 @@ func main() {
 				dialog.ShowError(err, myWindow)
 				return
 			}
+			editorScroll.ScrollToTop()
 			updateWindowTitle()
 		})
 	})
@@ -129,7 +132,7 @@ func main() {
 			},
 			Shortcut: &desktop.CustomShortcut{KeyName: fyne.KeyS, Modifier: fyne.KeyModifierControl},
 		})))
-	textEditorContainer := container.New(layout.NewCustomPaddedLayout(10, 10, 10, 10), container.NewScroll(textEditor.Widget))
+	textEditorContainer := container.New(layout.NewCustomPaddedLayout(10, 10, 10, 10), editorScroll)
 	myWindow.SetContent(container.NewBorder(nil, nil, tree, nil, textEditorContainer))
 	myWindow.ShowAndRun()
 }
