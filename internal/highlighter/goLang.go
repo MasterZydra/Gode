@@ -5,9 +5,9 @@ import (
 	"go/token"
 )
 
-type GoHighlighter struct{}
+type GoLang struct{}
 
-func (GoHighlighter) Highlight(source string) []HighlightedLine {
+func (GoLang) Highlight(source string) []HighlightedLine {
 	lines := splitLines(source)
 	fileSet := token.NewFileSet()
 	file := fileSet.AddFile("source.go", -1, len(source))

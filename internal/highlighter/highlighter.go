@@ -1,5 +1,10 @@
 package highlighter
 
+import (
+	"path/filepath"
+	"strings"
+)
+
 const TabWidth = 4
 
 type Highlighter interface {
@@ -27,11 +32,22 @@ type HighlightedLine struct {
 }
 
 var HighlightersByExtension = map[string]Highlighter{
-	".go": GoHighlighter{},
+	".go": GoLang{},
+}
+
+var highlightersByFileName = map[string]Highlighter{
+	"dockerfile": Dockerfile{},
 }
 
 func HighlighterForExtension(extension string) Highlighter {
 	return HighlightersByExtension[extension]
+}
+
+func HighlighterForFile(path string) Highlighter {
+	if highlighter := HighlighterForExtension(filepath.Ext(path)); highlighter != nil {
+		return highlighter
+	}
+	return highlightersByFileName[strings.ToLower(filepath.Base(path))]
 }
 
 func PlainLines(source string) []HighlightedLine {

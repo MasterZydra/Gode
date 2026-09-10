@@ -47,7 +47,7 @@ func (e *Editor) Load(path string) error {
 	}
 
 	e.loading = true
-	e.Widget.SetHighlighter(highlighter.HighlighterForExtension(filepath.Ext(path)))
+	e.Widget.SetHighlighter(highlighter.HighlighterForFile(path))
 	e.Widget.SetText(string(contents))
 	e.loading = false
 	e.SelectedPath = path
