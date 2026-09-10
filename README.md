@@ -6,8 +6,9 @@ The long-term goal is to evolve Gode into a lightweight IDE.
 
 ## Code highlighting features
 The editor has built-in code highlighting for
-- Go
 - Dockerfile
+- JSON
+- Go
 
 ## Shortcuts and editing features
 
