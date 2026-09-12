@@ -113,7 +113,7 @@ func TestRepositoryInfoReportsBranchAndAheadBehind(t *testing.T) {
 
 func TestRepositoryPushAndPull(t *testing.T) {
 	remote := t.TempDir()
-	runGit(t, remote, "init", "--bare")
+	runGit(t, remote, "init", "--bare", "-b", "main")
 
 	root := t.TempDir()
 	runGit(t, root, "init", "-b", "main")
@@ -136,7 +136,7 @@ func TestRepositoryPushAndPull(t *testing.T) {
 	}
 
 	clone := t.TempDir()
-	runGit(t, clone, "clone", remote, ".")
+	runGit(t, clone, "clone", "--branch", "main", remote, ".")
 	runGit(t, clone, "config", "user.email", "test@example.com")
 	runGit(t, clone, "config", "user.name", "Test User")
 	cloneFile := filepath.Join(clone, "file.txt")
