@@ -49,6 +49,23 @@ func TestGitViewHidesEmptyStagedSection(t *testing.T) {
 	}
 }
 
+func TestGitViewRefreshButtonReloadsStatus(t *testing.T) {
+	test.NewTempApp(t)
+	root := t.TempDir()
+	runGitCommand(t, root, "init")
+	view := NewGitView(root, nil, nil)
+
+	writeGitTestFile(t, filepath.Join(root, "new.txt"), "content")
+	if len(view.changesSection.Objects) != 2 {
+		t.Fatalf("changes section has %d objects before refresh, want heading and no changes", len(view.changesSection.Objects))
+	}
+
+	test.Tap(view.refresh)
+	if len(view.changesSection.Objects) != 2 {
+		t.Fatalf("changes section has %d objects after refresh, want heading and file", len(view.changesSection.Objects))
+	}
+}
+
 func runGitCommand(t *testing.T, root string, args ...string) {
 	t.Helper()
 	command := exec.Command("git", append([]string{"-C", root}, args...)...)

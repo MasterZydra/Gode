@@ -16,6 +16,7 @@ type GitView struct {
 	onError    func(error)
 
 	root           *fyne.Container
+	refresh        *widget.Button
 	message        *widget.Entry
 	commit         *widget.Button
 	stagedSection  *fyne.Container
@@ -38,12 +39,14 @@ func NewGitView(rootPath string, onOpen func(string), onError func(error)) *GitV
 			view.commit.Disable()
 		}
 	}
+	view.refresh = widget.NewButton("Refresh", view.Refresh)
 	view.commit = widget.NewButton("Commit", view.commitChanges)
 	view.commit.Disable()
 	view.stagedSection = container.NewVBox()
 	view.changesSection = container.NewVBox()
 	view.statusLabel = widget.NewLabel("")
 	view.root = container.NewVBox(
+		view.refresh,
 		view.message,
 		view.commit,
 		widget.NewSeparator(),
