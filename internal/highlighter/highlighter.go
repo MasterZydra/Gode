@@ -77,7 +77,7 @@ func expandTabs(line string) string {
 	for _, character := range line {
 		if character == '\t' {
 			spaces := TabWidth - column%TabWidth
-			for i := 0; i < spaces; i++ {
+			for range spaces {
 				result = append(result, ' ')
 			}
 			column += spaces

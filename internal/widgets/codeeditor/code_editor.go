@@ -377,17 +377,11 @@ func (e *CodeEditor) DoubleTapped(event *fyne.PointEvent) {
 func (e *CodeEditor) cursorOffsetFromPosition(position fyne.Position) int {
 	lineHeight := e.lineHeight()
 	charWidth := e.charWidth()
-	line := int(position.Y / lineHeight)
-	if line < 0 {
-		line = 0
-	}
+	line := max(int(position.Y/lineHeight), 0)
 	if line >= len(e.lines) {
 		line = len(e.lines) - 1
 	}
-	column := int((position.X - e.lineNumberWidth()) / charWidth)
-	if column < 0 {
-		column = 0
-	}
+	column := max(int((position.X-e.lineNumberWidth())/charWidth), 0)
 	return e.offsetForLineColumn(line, column)
 }
 
@@ -604,14 +598,8 @@ func (e *CodeEditor) selectionRectangles(cursor cursorState, lineHeight, lineNum
 	for lineIndex, line := range e.Buffer.Lines() {
 		lineLength := len([]rune(line))
 		lineEnd := offset + lineLength
-		selectionStart := start
-		if selectionStart < offset {
-			selectionStart = offset
-		}
-		selectionEnd := end
-		if selectionEnd > lineEnd {
-			selectionEnd = lineEnd
-		}
+		selectionStart := max(start, offset)
+		selectionEnd := min(end, lineEnd)
 		if selectionStart < selectionEnd {
 			localStart := selectionStart - offset
 			localEnd := selectionEnd - offset
@@ -761,10 +749,7 @@ func (r *codeEditorRenderer) Refresh() {
 			if span.Start > cursor {
 				r.objects = append(r.objects, newTextSpan(string([]rune(line.Text)[cursor:span.Start]), theme.Color(theme.ColorNameForeground), lineNumberWidth+float32(cursor)*charWidth, y))
 			}
-			end := span.End
-			if end > len([]rune(line.Text)) {
-				end = len([]rune(line.Text))
-			}
+			end := min(span.End, len([]rune(line.Text)))
 			r.objects = append(r.objects, newTextSpan(string([]rune(line.Text)[span.Start:end]), spanColor(span.Kind), lineNumberWidth+float32(span.Start)*charWidth, y))
 			cursor = end
 		}

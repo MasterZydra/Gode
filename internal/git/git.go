@@ -131,7 +131,7 @@ func (r *Repository) runAllowExitCode(allowedExitCode int, args ...string) (stri
 
 func ParseStatus(output string) (Status, error) {
 	var status Status
-	for _, line := range strings.Split(strings.TrimSuffix(output, "\n"), "\n") {
+	for line := range strings.SplitSeq(strings.TrimSuffix(output, "\n"), "\n") {
 		if line == "" {
 			continue
 		}
