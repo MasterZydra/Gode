@@ -16,6 +16,10 @@ func NewExplorer(rootDir string) *Explorer {
 	}
 }
 
+func (explorer *Explorer) RootDir() string {
+	return explorer.rootDir
+}
+
 func (explorer *Explorer) Update() error {
 	nodes, err := readNodes(explorer.rootDir)
 	if err != nil {

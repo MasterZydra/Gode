@@ -4,6 +4,7 @@ import (
 	"gode/internal/commands"
 	"gode/internal/editor"
 	"gode/internal/explorer"
+	"gode/internal/ui"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
@@ -16,6 +17,7 @@ var (
 	textEditor   *editor.Editor
 	editorScroll *container.Scroll
 	fileTree     *widget.Tree
+	gitView      *ui.GitView
 )
 
 func setTextEditor(myWindow fyne.Window, currentExplorer *explorer.Explorer) {
