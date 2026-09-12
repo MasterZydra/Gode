@@ -89,6 +89,15 @@ func (r *Repository) Push() error {
 }
 
 func (r *Repository) Diff(path string, staged bool) (string, error) {
+	if !staged {
+		untracked, err := r.run("ls-files", "--others", "--exclude-standard", "--", path)
+		if err != nil {
+			return "", err
+		}
+		if strings.TrimSpace(string(untracked)) != "" {
+			return r.runAllowExitCode(1, "diff", "--no-index", "--", "/dev/null", path)
+		}
+	}
 	args := []string{"diff"}
 	if staged {
 		args = append(args, "--cached")
@@ -96,6 +105,28 @@ func (r *Repository) Diff(path string, staged bool) (string, error) {
 	args = append(args, "--", path)
 	output, err := r.run(args...)
 	return string(output), err
+}
+
+func (r *Repository) runAllowExitCode(allowedExitCode int, args ...string) (string, error) {
+	if strings.TrimSpace(r.root) == "" {
+		return "", fmt.Errorf("repository path is empty")
+	}
+	commandArgs := append([]string{"-C", r.root}, args...)
+	command := exec.Command("git", commandArgs...)
+	var stderr bytes.Buffer
+	command.Stderr = &stderr
+	output, err := command.Output()
+	if err == nil {
+		return string(output), nil
+	}
+	if exitError, ok := err.(*exec.ExitError); ok && exitError.ExitCode() == allowedExitCode {
+		return string(output), nil
+	}
+	message := strings.TrimSpace(stderr.String())
+	if message == "" {
+		message = err.Error()
+	}
+	return "", fmt.Errorf("git %s: %s", strings.Join(args, " "), message)
 }
 
 func ParseStatus(output string) (Status, error) {

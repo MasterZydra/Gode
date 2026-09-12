@@ -177,6 +177,21 @@ func TestRepositoryDiff(t *testing.T) {
 	}
 }
 
+func TestRepositoryDiffForUntrackedFile(t *testing.T) {
+	root := t.TempDir()
+	runGit(t, root, "init")
+	path := filepath.Join(root, "new.txt")
+	writeFile(t, path, "new content\n")
+
+	diff, err := NewRepository(root).Diff("new.txt", false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(diff, "+new content") {
+		t.Fatalf("untracked diff does not contain file contents: %q", diff)
+	}
+}
+
 func runGit(t *testing.T, root string, args ...string) {
 	t.Helper()
 	command := exec.Command("git", append([]string{"-C", root}, args...)...)
