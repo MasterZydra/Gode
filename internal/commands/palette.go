@@ -4,21 +4,51 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/dialog"
+	"fyne.io/fyne/v2/driver/desktop"
 	"fyne.io/fyne/v2/widget"
 )
 
 type Palette struct {
 	registry *Registry
 	window   fyne.Window
-	entry    *widget.Entry
+	entry    *paletteEntry
 	list     *widget.List
 	results  []Command
 	dialog   *dialog.CustomDialog
 }
 
+type paletteEntry struct {
+	*widget.Entry
+	onEscape func()
+}
+
+func newPaletteEntry(onEscape func()) *paletteEntry {
+	entry := &paletteEntry{
+		Entry:    widget.NewEntry(),
+		onEscape: onEscape,
+	}
+	entry.ExtendBaseWidget(entry)
+	return entry
+}
+
+func (e *paletteEntry) TypedKey(key *fyne.KeyEvent) {
+	if key.Name == fyne.KeyEscape {
+		e.onEscape()
+		return
+	}
+	e.Entry.TypedKey(key)
+}
+
+func (e *paletteEntry) MouseDown(event *desktop.MouseEvent) {
+	if canvas := fyne.CurrentApp().Driver().CanvasForObject(e); canvas != nil {
+		canvas.Focus(e)
+	}
+	e.Entry.MouseDown(event)
+}
+
 func NewPalette(registry *Registry, window fyne.Window) *Palette {
 	palette := &Palette{registry: registry, window: window}
-	palette.entry = widget.NewEntry()
+	palette.entry = newPaletteEntry(func() { palette.dialog.Hide() })
 	palette.entry.SetPlaceHolder("Search commands")
 	palette.list = widget.NewList(
 		func() int { return len(palette.results) },
@@ -50,11 +80,10 @@ func NewPalette(registry *Registry, window fyne.Window) *Palette {
 func (p *Palette) Show() {
 	p.entry.SetText("")
 	p.results = p.registry.Search("")
+	p.list.UnselectAll()
 	p.list.Refresh()
 	p.dialog.Show()
-	if canvas := fyne.CurrentApp().Driver().CanvasForObject(p.entry); canvas != nil {
-		canvas.Focus(p.entry)
-	}
+	p.window.Canvas().Focus(p.entry)
 }
 
 func (p *Palette) executeFirst() {
