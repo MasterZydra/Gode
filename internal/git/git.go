@@ -78,6 +78,16 @@ func (r *Repository) Commit(message string) error {
 	return err
 }
 
+func (r *Repository) Pull() error {
+	_, err := r.run("pull")
+	return err
+}
+
+func (r *Repository) Push() error {
+	_, err := r.run("push")
+	return err
+}
+
 func ParseStatus(output string) (Status, error) {
 	var status Status
 	for _, line := range strings.Split(strings.TrimSuffix(output, "\n"), "\n") {

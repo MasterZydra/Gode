@@ -18,6 +18,8 @@ type GitView struct {
 
 	root           *fyne.Container
 	refresh        *widget.Button
+	pull           *widget.Button
+	push           *widget.Button
 	message        *widget.Entry
 	commit         *widget.Button
 	stagedSection  *fyne.Container
@@ -40,14 +42,16 @@ func NewGitView(rootPath string, onOpen func(string), onError func(error)) *GitV
 			view.commit.Disable()
 		}
 	}
-	view.refresh = widget.NewButton("Refresh", view.Refresh)
+	view.pull = widget.NewButton("Pull", view.pullChanges)
+	view.push = widget.NewButton("Push", view.pushChanges)
+	view.refresh = widget.NewButton("Refresh", view.refreshGit)
 	view.commit = widget.NewButton("Commit", view.commitChanges)
 	view.commit.Disable()
 	view.stagedSection = container.NewVBox()
 	view.changesSection = container.NewVBox()
 	view.statusLabel = widget.NewLabel("")
 	view.root = container.NewVBox(
-		view.refresh,
+		container.NewHBox(view.pull, view.push, view.refresh),
 		view.message,
 		view.commit,
 		widget.NewSeparator(),
@@ -98,6 +102,29 @@ func (v *GitView) Refresh() {
 		}
 	}
 	v.refreshContainers()
+}
+
+func (v *GitView) refreshGit() {
+	v.Refresh()
+	if v.onRefresh != nil {
+		v.onRefresh()
+	}
+}
+
+func (v *GitView) pullChanges() {
+	if err := v.repository.Pull(); err != nil {
+		v.reportError(err)
+		return
+	}
+	v.refreshGit()
+}
+
+func (v *GitView) pushChanges() {
+	if err := v.repository.Push(); err != nil {
+		v.reportError(err)
+		return
+	}
+	v.refreshGit()
 }
 
 func (v *GitView) changeRow(change git.Change, actionLabel string, action func(string) error) fyne.CanvasObject {

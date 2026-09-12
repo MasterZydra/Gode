@@ -92,6 +92,70 @@ func TestRepositoryStatusReportsUntrackedFile(t *testing.T) {
 	}
 }
 
+func TestRepositoryInfoReportsBranchAndAheadBehind(t *testing.T) {
+	root := t.TempDir()
+	runGit(t, root, "init", "-b", "main")
+	runGit(t, root, "config", "user.email", "test@example.com")
+	runGit(t, root, "config", "user.name", "Test User")
+	writeFile(t, filepath.Join(root, "file.txt"), "initial")
+	runGit(t, root, "add", "file.txt")
+	runGit(t, root, "commit", "-m", "initial")
+
+	info, err := NewRepository(root).Info()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if info.Branch != "main" || info.Ahead != 0 || info.Behind != 0 {
+		t.Fatalf("got info %#v", info)
+	}
+}
+
+func TestRepositoryPushAndPull(t *testing.T) {
+	remote := t.TempDir()
+	runGit(t, remote, "init", "--bare")
+
+	root := t.TempDir()
+	runGit(t, root, "init", "-b", "main")
+	runGit(t, root, "config", "user.email", "test@example.com")
+	runGit(t, root, "config", "user.name", "Test User")
+	runGit(t, root, "remote", "add", "origin", remote)
+	filePath := filepath.Join(root, "file.txt")
+	writeFile(t, filePath, "initial")
+	runGit(t, root, "add", "file.txt")
+	runGit(t, root, "commit", "-m", "initial")
+	runGit(t, root, "push", "--set-upstream", "origin", "main")
+
+	repository := NewRepository(root)
+
+	writeFile(t, filePath, "pushed")
+	runGit(t, root, "add", "file.txt")
+	runGit(t, root, "commit", "-m", "pushed")
+	if err := repository.Push(); err != nil {
+		t.Fatal(err)
+	}
+
+	clone := t.TempDir()
+	runGit(t, clone, "clone", remote, ".")
+	runGit(t, clone, "config", "user.email", "test@example.com")
+	runGit(t, clone, "config", "user.name", "Test User")
+	cloneFile := filepath.Join(clone, "file.txt")
+	writeFile(t, cloneFile, "pulled")
+	runGit(t, clone, "add", "file.txt")
+	runGit(t, clone, "commit", "-m", "pulled")
+	runGit(t, clone, "push")
+
+	if err := repository.Pull(); err != nil {
+		t.Fatal(err)
+	}
+	contents, err := os.ReadFile(filePath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(contents) != "pulled" {
+		t.Fatalf("got file contents %q, want pulled", contents)
+	}
+}
+
 func runGit(t *testing.T, root string, args ...string) {
 	t.Helper()
 	command := exec.Command("git", append([]string{"-C", root}, args...)...)
