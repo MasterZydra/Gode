@@ -47,6 +47,7 @@ type cursorState struct {
 
 var (
 	_ fyne.Focusable      = (*CodeEditor)(nil)
+	_ fyne.Tabbable       = (*CodeEditor)(nil)
 	_ desktop.Keyable     = (*CodeEditor)(nil)
 	_ desktop.Mouseable   = (*CodeEditor)(nil)
 	_ fyne.Draggable      = (*CodeEditor)(nil)
@@ -69,6 +70,10 @@ func (e *CodeEditor) SetText(text string) {
 
 func (e *CodeEditor) Text() string {
 	return e.Buffer.String()
+}
+
+func (e *CodeEditor) AcceptsTab() bool {
+	return true
 }
 
 func (e *CodeEditor) SetReadOnly(readOnly bool) {
@@ -166,6 +171,9 @@ func (e *CodeEditor) TypedKey(key *fyne.KeyEvent) {
 	case fyne.KeyReturn, fyne.KeyEnter:
 		e.lineClipboard = false
 		e.replaceSelections([]rune{'\n'})
+	case fyne.KeyTab:
+		e.lineClipboard = false
+		e.replaceSelections([]rune{'\t'})
 	default:
 		return
 	}

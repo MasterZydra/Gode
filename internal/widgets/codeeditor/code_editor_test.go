@@ -66,3 +66,17 @@ func TestCodeEditorReadOnlyRejectsInput(t *testing.T) {
 		t.Fatalf("read-only editor changed text to %q", got)
 	}
 }
+
+func TestCodeEditorInsertsTab(t *testing.T) {
+	editor := NewCodeEditor()
+	editor.focused = true
+	if !editor.AcceptsTab() {
+		t.Fatal("editor does not accept Tab")
+	}
+
+	editor.TypedKey(&fyne.KeyEvent{Name: fyne.KeyTab})
+
+	if got := editor.Text(); got != "\t" {
+		t.Fatalf("text = %q, want a tab", got)
+	}
+}
