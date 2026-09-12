@@ -13,6 +13,7 @@ import (
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/layout"
+	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 )
 
@@ -61,9 +62,17 @@ func setTree(myWindow fyne.Window) {
 	statusBar = statusbar.NewStatusBar(fileExplorer.RootDir())
 	gitView.SetOnRefresh(statusBar.Refresh)
 	textEditorContainer := container.New(layout.NewCustomPaddedLayout(10, 10, 10, 10), editorScroll)
+	refreshExplorer := widget.NewButtonWithIcon("", theme.ViewRefreshIcon(), func() {
+		if err := fileExplorer.Update(); err != nil {
+			dialog.ShowError(err, myWindow)
+			return
+		}
+		fileTree.Refresh()
+	})
+	explorerView := container.NewBorder(container.NewHBox(refreshExplorer), nil, nil, nil, fileTree)
 	sidebar := container.NewAppTabs(
-		container.NewTabItem("Explorer", fileTree),
-		container.NewTabItem("Git", gitView.CanvasObject()),
+		container.NewTabItemWithIcon("", theme.FolderIcon(), explorerView),
+		container.NewTabItemWithIcon("", theme.HistoryIcon(), gitView.CanvasObject()),
 	)
 	sidebar.SetTabLocation(container.TabLocationLeading)
 	content := container.NewHSplit(sidebar, textEditorContainer)

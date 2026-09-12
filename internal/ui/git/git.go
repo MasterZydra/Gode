@@ -7,6 +7,7 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 )
 
@@ -43,9 +44,9 @@ func NewGitView(rootPath string, onOpen func(string), onError func(error)) *GitV
 			view.commit.Disable()
 		}
 	}
-	view.pull = widget.NewButton("Pull", view.pullChanges)
-	view.push = widget.NewButton("Push", view.pushChanges)
-	view.refresh = widget.NewButton("Refresh", view.refreshGit)
+	view.pull = widget.NewButtonWithIcon("", theme.MenuDropDownIcon(), view.pullChanges)
+	view.push = widget.NewButtonWithIcon("", theme.MenuDropUpIcon(), view.pushChanges)
+	view.refresh = widget.NewButtonWithIcon("", theme.ViewRefreshIcon(), view.refreshGit)
 	view.commit = widget.NewButton("Commit", view.commitChanges)
 	view.commit.Disable()
 	view.stagedSection = container.NewVBox()
