@@ -66,6 +66,26 @@ func TestGitViewRefreshButtonReloadsStatus(t *testing.T) {
 	}
 }
 
+func TestGitViewCommitNotifiesRefresh(t *testing.T) {
+	test.NewTempApp(t)
+	root := t.TempDir()
+	runGitCommand(t, root, "init")
+	runGitCommand(t, root, "config", "user.email", "test@example.com")
+	runGitCommand(t, root, "config", "user.name", "Test User")
+	writeGitTestFile(t, filepath.Join(root, "file.txt"), "content")
+	runGitCommand(t, root, "add", "file.txt")
+
+	view := NewGitView(root, nil, nil)
+	refreshed := false
+	view.SetOnRefresh(func() { refreshed = true })
+	view.message.SetText("initial")
+
+	test.Tap(view.commit)
+	if !refreshed {
+		t.Fatal("commit did not notify the refresh callback")
+	}
+}
+
 func runGitCommand(t *testing.T, root string, args ...string) {
 	t.Helper()
 	command := exec.Command("git", append([]string{"-C", root}, args...)...)

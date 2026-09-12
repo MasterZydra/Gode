@@ -164,7 +164,7 @@ func (v *GitView) commitChanges() {
 		return
 	}
 	v.message.SetText("")
-	v.Refresh()
+	v.refreshGit()
 }
 
 func (v *GitView) refreshContainers() {
