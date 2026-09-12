@@ -2,7 +2,7 @@ package main
 
 import (
 	"gode/internal/explorer"
-	"gode/internal/ui"
+	"gode/internal/ui/theme"
 	"os"
 
 	"fyne.io/fyne/v2"
@@ -11,7 +11,7 @@ import (
 
 func main() {
 	myApp := app.NewWithID("com.gode.editor")
-	myApp.Settings().SetTheme(ui.NewFolderTheme())
+	myApp.Settings().SetTheme(theme.NewFolderTheme())
 	myWindow := myApp.NewWindow("Gode")
 	myWindow.Resize(fyne.NewSize(1440, 801))
 

@@ -1,8 +1,8 @@
-package ui
+package statusbar
 
 import (
 	"fmt"
-	"gode/internal/git"
+	internalgit "gode/internal/git"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
@@ -10,7 +10,7 @@ import (
 )
 
 type StatusBar struct {
-	repository *git.Repository
+	repository *internalgit.Repository
 	label      *widget.Label
 	root       fyne.CanvasObject
 }
@@ -25,7 +25,7 @@ func NewStatusBar(rootPath string) *StatusBar {
 }
 
 func (b *StatusBar) SetRoot(rootPath string) {
-	b.repository = git.NewRepository(rootPath)
+	b.repository = internalgit.NewRepository(rootPath)
 	b.Refresh()
 }
 

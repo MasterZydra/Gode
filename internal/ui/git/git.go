@@ -1,8 +1,8 @@
-package ui
+package git
 
 import (
 	"fmt"
-	"gode/internal/git"
+	internalgit "gode/internal/git"
 	"strings"
 
 	"fyne.io/fyne/v2"
@@ -11,7 +11,7 @@ import (
 )
 
 type GitView struct {
-	repository *git.Repository
+	repository *internalgit.Repository
 	onOpen     func(string)
 	onDiff     func(string, string)
 	onError    func(error)
@@ -65,7 +65,7 @@ func NewGitView(rootPath string, onOpen func(string), onError func(error)) *GitV
 }
 
 func (v *GitView) SetRoot(rootPath string) {
-	v.repository = git.NewRepository(rootPath)
+	v.repository = internalgit.NewRepository(rootPath)
 	v.Refresh()
 }
 
@@ -132,7 +132,7 @@ func (v *GitView) pushChanges() {
 	v.refreshGit()
 }
 
-func (v *GitView) changeRow(change git.Change, actionLabel string, staged bool, action func(string) error) fyne.CanvasObject {
+func (v *GitView) changeRow(change internalgit.Change, actionLabel string, staged bool, action func(string) error) fyne.CanvasObject {
 	open := widget.NewButton(change.Path, func() {
 		if v.onOpen != nil {
 			v.onOpen(change.Path)

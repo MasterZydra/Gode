@@ -3,7 +3,9 @@ package main
 import (
 	"gode/internal/explorer"
 	"gode/internal/highlighter"
-	"gode/internal/ui"
+	"gode/internal/ui/git"
+	"gode/internal/ui/statusbar"
+	"gode/internal/ui/tree"
 	"gode/internal/widgets/codeeditor"
 	"path/filepath"
 
@@ -15,7 +17,7 @@ import (
 )
 
 func setTree(myWindow fyne.Window) {
-	fileTree = ui.NewTree(fileExplorer, func(node *explorer.Node) {
+	fileTree = tree.NewTree(fileExplorer, func(node *explorer.Node) {
 		if !node.IsDir && node.Path == textEditor.SelectedPath {
 			return
 		}
@@ -34,7 +36,7 @@ func setTree(myWindow fyne.Window) {
 			myWindow.SetTitle(textEditor.Title())
 		})
 	})
-	gitView = ui.NewGitView(fileExplorer.RootDir(), func(path string) {
+	gitView = git.NewGitView(fileExplorer.RootDir(), func(path string) {
 		withSavedChanges(myWindow, func() {
 			if err := textEditor.Load(filepath.Join(fileExplorer.RootDir(), path)); err != nil {
 				dialog.ShowError(err, myWindow)
@@ -56,7 +58,7 @@ func setTree(myWindow fyne.Window) {
 		diffView.Resize(fyne.NewSize(900, 600))
 		diffView.Show()
 	})
-	statusBar = ui.NewStatusBar(fileExplorer.RootDir())
+	statusBar = statusbar.NewStatusBar(fileExplorer.RootDir())
 	gitView.SetOnRefresh(statusBar.Refresh)
 	textEditorContainer := container.New(layout.NewCustomPaddedLayout(10, 10, 10, 10), editorScroll)
 	sidebar := container.NewAppTabs(

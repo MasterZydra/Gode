@@ -1,4 +1,4 @@
-package ui
+package tree
 
 import (
 	"gode/internal/explorer"
