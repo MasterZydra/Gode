@@ -37,6 +37,7 @@ type CodeEditor struct {
 	shiftDown         bool
 	lineClipboard     bool
 	lineClipboardText string
+	readOnly          bool
 }
 
 type cursorState struct {
@@ -68,6 +69,10 @@ func (e *CodeEditor) SetText(text string) {
 
 func (e *CodeEditor) Text() string {
 	return e.Buffer.String()
+}
+
+func (e *CodeEditor) SetReadOnly(readOnly bool) {
+	e.readOnly = readOnly
 }
 
 func (e *CodeEditor) CursorBounds() (fyne.Position, fyne.Size) {
@@ -107,7 +112,7 @@ func (e *CodeEditor) changed() {
 }
 
 func (e *CodeEditor) TypedRune(r rune) {
-	if !e.focused {
+	if !e.focused || e.readOnly {
 		return
 	}
 	e.lineClipboard = false
@@ -116,7 +121,7 @@ func (e *CodeEditor) TypedRune(r rune) {
 }
 
 func (e *CodeEditor) TypedKey(key *fyne.KeyEvent) {
-	if !e.focused {
+	if !e.focused || e.readOnly {
 		return
 	}
 	oldCursors := append([]cursorState(nil), e.cursors...)
@@ -189,8 +194,6 @@ func (e *CodeEditor) moveCursorsWord(left, extendSelection bool) {
 			if left {
 				if e.cursors[index].anchor < position {
 					position = e.cursors[index].anchor
-				} else {
-					position = position
 				}
 			} else if e.cursors[index].anchor > position {
 				position = e.cursors[index].anchor
@@ -236,6 +239,9 @@ func (e *CodeEditor) KeyUp(key *fyne.KeyEvent) {
 }
 
 func (e *CodeEditor) TypedShortcut(shortcut fyne.Shortcut) {
+	if e.readOnly {
+		return
+	}
 	if custom, ok := shortcut.(*desktop.CustomShortcut); ok {
 		if custom.Modifier&fyne.KeyModifierControl != 0 && (custom.KeyName == fyne.KeyLeft || custom.KeyName == fyne.KeyRight) {
 			oldCursors := append([]cursorState(nil), e.cursors...)
@@ -720,12 +726,27 @@ func (r *codeEditorRenderer) Refresh() {
 	}
 	for lineIndex, line := range r.editor.lines {
 		y := float32(lineIndex) * lineHeight
+		for _, span := range line.Spans {
+			if background := spanBackground(span.Kind); background != nil {
+				width := float32(len([]rune(line.Text))) * charWidth
+				if available := r.editor.Size().Width - lineNumberWidth; available > width {
+					width = available
+				}
+				backgroundRectangle := canvas.NewRectangle(background)
+				backgroundRectangle.Move(fyne.NewPos(lineNumberWidth, y))
+				backgroundRectangle.Resize(fyne.NewSize(width, lineHeight))
+				r.objects = append(r.objects, backgroundRectangle)
+			}
+		}
 		lineNumber := canvas.NewText(fmt.Sprintf("%d", lineIndex+1), theme.Color(theme.ColorNameDisabled))
 		lineNumber.TextStyle.Monospace = true
 		lineNumber.Move(fyne.NewPos(0, y))
 		r.objects = append(r.objects, lineNumber)
 		cursor := 0
 		for _, span := range line.Spans {
+			if spanBackground(span.Kind) != nil {
+				continue
+			}
 			if span.Start > len([]rune(line.Text)) {
 				continue
 			}
@@ -761,6 +782,17 @@ func spanColor(kind highlighter.HighlightKind) color.Color {
 		return numberColor
 	default:
 		return keywordColor
+	}
+}
+
+func spanBackground(kind highlighter.HighlightKind) color.Color {
+	switch kind {
+	case highlighter.HighlightDiffAdded:
+		return color.NRGBA{R: 70, G: 160, B: 80, A: 90}
+	case highlighter.HighlightDiffRemoved:
+		return color.NRGBA{R: 210, G: 70, B: 70, A: 100}
+	default:
+		return nil
 	}
 }
 

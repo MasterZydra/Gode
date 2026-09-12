@@ -148,3 +148,20 @@ func TestHighlighterForExtensionUsesRegistry(t *testing.T) {
 		t.Fatal("unknown extension should not have a highlighter")
 	}
 }
+
+func TestDiffHighlighterAddsLineTokensAndPreservesSyntax(t *testing.T) {
+	lines := Diff{Base: GoLang{}}.Highlight("@@ -1 +1 @@\n-package old\n+package new\n+\treturn")
+
+	if lines[1].Spans[0] != (TokenSpan{Start: 0, End: 12, Kind: HighlightDiffRemoved}) {
+		t.Fatalf("removed line span = %#v", lines[1].Spans)
+	}
+	if lines[2].Spans[0] != (TokenSpan{Start: 0, End: 12, Kind: HighlightDiffAdded}) {
+		t.Fatalf("added line span = %#v", lines[2].Spans)
+	}
+	if len(lines[2].Spans) < 2 || lines[2].Spans[1].Start != 1 || lines[2].Spans[1].Kind != HighlightKeyword {
+		t.Fatalf("added line syntax spans = %#v", lines[2].Spans)
+	}
+	if len(lines[3].Spans) < 2 || lines[3].Spans[1].Start != 4 || lines[3].Spans[1].Kind != HighlightKeyword {
+		t.Fatalf("context line syntax spans = %#v", lines[3].Spans)
+	}
+}

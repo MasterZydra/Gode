@@ -88,6 +88,16 @@ func (r *Repository) Push() error {
 	return err
 }
 
+func (r *Repository) Diff(path string, staged bool) (string, error) {
+	args := []string{"diff"}
+	if staged {
+		args = append(args, "--cached")
+	}
+	args = append(args, "--", path)
+	output, err := r.run(args...)
+	return string(output), err
+}
+
 func ParseStatus(output string) (Status, error) {
 	var status Status
 	for _, line := range strings.Split(strings.TrimSuffix(output, "\n"), "\n") {

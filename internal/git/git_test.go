@@ -4,6 +4,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -153,6 +154,26 @@ func TestRepositoryPushAndPull(t *testing.T) {
 	}
 	if string(contents) != "pulled" {
 		t.Fatalf("got file contents %q, want pulled", contents)
+	}
+}
+
+func TestRepositoryDiff(t *testing.T) {
+	root := t.TempDir()
+	runGit(t, root, "init")
+	runGit(t, root, "config", "user.email", "test@example.com")
+	runGit(t, root, "config", "user.name", "Test User")
+	path := filepath.Join(root, "file.txt")
+	writeFile(t, path, "before\n")
+	runGit(t, root, "add", "file.txt")
+	runGit(t, root, "commit", "-m", "initial")
+	writeFile(t, path, "after\n")
+
+	diff, err := NewRepository(root).Diff("file.txt", false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(diff, "-before") || !strings.Contains(diff, "+after") {
+		t.Fatalf("diff does not contain expected changes: %q", diff)
 	}
 }
 

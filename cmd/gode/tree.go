@@ -2,13 +2,16 @@ package main
 
 import (
 	"gode/internal/explorer"
+	"gode/internal/highlighter"
 	"gode/internal/ui"
+	"gode/internal/widgets/codeeditor"
 	"path/filepath"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/layout"
+	"fyne.io/fyne/v2/widget"
 )
 
 func setTree(myWindow fyne.Window) {
@@ -42,6 +45,16 @@ func setTree(myWindow fyne.Window) {
 		})
 	}, func(err error) {
 		dialog.ShowError(err, myWindow)
+	})
+	gitView.SetOnDiff(func(path, output string) {
+		diffView := fyne.CurrentApp().NewWindow("Diff: " + path)
+		diffText := codeeditor.NewCodeEditor()
+		diffText.SetHighlighter(highlighter.NewDiffHighlighter(highlighter.HighlighterForFile(path)))
+		diffText.SetReadOnly(true)
+		diffText.SetText(output)
+		diffView.SetContent(container.NewBorder(nil, widget.NewButton("Close", diffView.Close), nil, nil, container.NewScroll(diffText)))
+		diffView.Resize(fyne.NewSize(900, 600))
+		diffView.Show()
 	})
 	statusBar = ui.NewStatusBar(fileExplorer.RootDir())
 	gitView.SetOnRefresh(statusBar.Refresh)

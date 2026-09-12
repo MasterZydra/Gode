@@ -13,6 +13,7 @@ import (
 type GitView struct {
 	repository *git.Repository
 	onOpen     func(string)
+	onDiff     func(string, string)
 	onError    func(error)
 	onRefresh  func()
 
@@ -72,6 +73,10 @@ func (v *GitView) SetOnRefresh(onRefresh func()) {
 	v.onRefresh = onRefresh
 }
 
+func (v *GitView) SetOnDiff(onDiff func(string, string)) {
+	v.onDiff = onDiff
+}
+
 func (v *GitView) CanvasObject() fyne.CanvasObject {
 	return container.NewScroll(v.root)
 }
@@ -91,14 +96,14 @@ func (v *GitView) Refresh() {
 	if len(status.Staged) > 0 {
 		v.stagedSection.Objects = append(v.stagedSection.Objects, widget.NewLabel("Staged Changes"))
 		for _, change := range status.Staged {
-			v.stagedSection.Objects = append(v.stagedSection.Objects, v.changeRow(change, "-", v.repository.Unstage))
+			v.stagedSection.Objects = append(v.stagedSection.Objects, v.changeRow(change, "-", true, v.repository.Unstage))
 		}
 	}
 	if len(status.Unstaged) == 0 {
 		v.changesSection.Objects = append(v.changesSection.Objects, widget.NewLabel("No changes"))
 	} else {
 		for _, change := range status.Unstaged {
-			v.changesSection.Objects = append(v.changesSection.Objects, v.changeRow(change, "+", v.repository.Stage))
+			v.changesSection.Objects = append(v.changesSection.Objects, v.changeRow(change, "+", false, v.repository.Stage))
 		}
 	}
 	v.refreshContainers()
@@ -127,10 +132,20 @@ func (v *GitView) pushChanges() {
 	v.refreshGit()
 }
 
-func (v *GitView) changeRow(change git.Change, actionLabel string, action func(string) error) fyne.CanvasObject {
+func (v *GitView) changeRow(change git.Change, actionLabel string, staged bool, action func(string) error) fyne.CanvasObject {
 	open := widget.NewButton(change.Path, func() {
 		if v.onOpen != nil {
 			v.onOpen(change.Path)
+		}
+	})
+	diff := widget.NewButton("Diff", func() {
+		output, err := v.repository.Diff(change.Path, staged)
+		if err != nil {
+			v.reportError(err)
+			return
+		}
+		if v.onDiff != nil {
+			v.onDiff(change.Path, output)
 		}
 	})
 	actionButton := widget.NewButton(actionLabel, func() {
@@ -140,7 +155,7 @@ func (v *GitView) changeRow(change git.Change, actionLabel string, action func(s
 		}
 		v.Refresh()
 	})
-	return container.NewBorder(nil, nil, nil, actionButton, open)
+	return container.NewBorder(nil, nil, nil, container.NewHBox(diff, actionButton), open)
 }
 
 func (v *GitView) commitChanges() {

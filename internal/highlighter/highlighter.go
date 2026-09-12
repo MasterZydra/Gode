@@ -24,6 +24,8 @@ const (
 	HighlightComment
 	HighlightString
 	HighlightNumber
+	HighlightDiffAdded
+	HighlightDiffRemoved
 )
 
 type HighlightedLine struct {

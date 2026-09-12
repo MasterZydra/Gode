@@ -54,3 +54,15 @@ func TestCodeEditorMultipleCursorsInsert(t *testing.T) {
 		t.Fatalf("got %q, want %q", got, "Xaa\nXbb")
 	}
 }
+
+func TestCodeEditorReadOnlyRejectsInput(t *testing.T) {
+	editor := NewCodeEditor()
+	editor.SetText("before")
+	editor.SetReadOnly(true)
+	editor.focused = true
+	editor.TypedRune('x')
+
+	if got := editor.Text(); got != "before" {
+		t.Fatalf("read-only editor changed text to %q", got)
+	}
+}
