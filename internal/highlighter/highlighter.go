@@ -34,6 +34,7 @@ type HighlightedLine struct {
 var HighlightersByExtension = map[string]Highlighter{
 	".go":   GoLang{},
 	".json": JSON{},
+	".php":  PHP{},
 }
 
 var highlightersByFileName = map[string]Highlighter{

@@ -65,6 +65,32 @@ func TestHighlighterForExtensionRecognizesJSON(t *testing.T) {
 	}
 }
 
+func TestHighlightPHPTokenKinds(t *testing.T) {
+	lines := PHP{}.Highlight("<?php\n// comment\nfunction greet(string $name) {\n\treturn \"Hello\" . 42;\n}")
+
+	if len(lines) != 5 {
+		t.Fatalf("got %d lines, want 5", len(lines))
+	}
+	if len(lines[1].Spans) == 0 || lines[1].Spans[0].Kind != HighlightComment {
+		t.Fatalf("comment was not highlighted: %#v", lines[1].Spans)
+	}
+	if len(lines[2].Spans) < 2 || lines[2].Spans[0].Kind != HighlightKeyword || lines[2].Spans[1].Kind != HighlightKeyword {
+		t.Fatalf("PHP keywords were not highlighted: %#v", lines[2].Spans)
+	}
+	if len(lines[3].Spans) < 2 || lines[3].Spans[0].Kind != HighlightKeyword || lines[3].Spans[1].Kind != HighlightString {
+		t.Fatalf("PHP return/string spans were not highlighted: %#v", lines[3].Spans)
+	}
+	if lines[3].Spans[len(lines[3].Spans)-1].Kind != HighlightNumber {
+		t.Fatalf("PHP number was not highlighted: %#v", lines[3].Spans)
+	}
+}
+
+func TestHighlighterForExtensionRecognizesPHP(t *testing.T) {
+	if _, ok := HighlighterForExtension(".php").(PHP); !ok {
+		t.Fatal("PHP extension did not use the PHP highlighter")
+	}
+}
+
 func TestHighlightDockerfileKeywordsAndComments(t *testing.T) {
 	lines := Dockerfile{}.Highlight("FROM alpine:latest\n# comment\nRUN echo hello # inline comment\nENV VALUE=\"#not a comment\"")
 
