@@ -18,6 +18,7 @@ var (
 	editorScroll *container.Scroll
 	fileTree     *widget.Tree
 	gitView      *ui.GitView
+	statusBar    *ui.StatusBar
 )
 
 func setTextEditor(myWindow fyne.Window, currentExplorer *explorer.Explorer) {

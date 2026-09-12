@@ -17,6 +17,12 @@ type Status struct {
 	Unstaged []Change
 }
 
+type Info struct {
+	Branch string
+	Ahead  int
+	Behind int
+}
+
 type Repository struct {
 	root string
 }
@@ -31,6 +37,27 @@ func (r *Repository) Status() (Status, error) {
 		return Status{}, err
 	}
 	return ParseStatus(string(output))
+}
+
+func (r *Repository) Info() (Info, error) {
+	branchOutput, err := r.run("branch", "--show-current")
+	if err != nil {
+		return Info{}, err
+	}
+
+	info := Info{Branch: strings.TrimSpace(string(branchOutput))}
+	if info.Branch == "" {
+		info.Branch = "HEAD"
+	}
+
+	counts, err := r.run("rev-list", "--left-right", "--count", "@{upstream}...HEAD")
+	if err != nil {
+		return info, nil
+	}
+	if _, err := fmt.Sscanf(string(counts), "%d %d", &info.Behind, &info.Ahead); err != nil {
+		return Info{}, fmt.Errorf("invalid git ahead/behind output %q: %w", counts, err)
+	}
+	return info, nil
 }
 
 func (r *Repository) Stage(path string) error {

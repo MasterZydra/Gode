@@ -43,6 +43,8 @@ func setTree(myWindow fyne.Window) {
 	}, func(err error) {
 		dialog.ShowError(err, myWindow)
 	})
+	statusBar = ui.NewStatusBar(fileExplorer.RootDir())
+	gitView.SetOnRefresh(statusBar.Refresh)
 	textEditorContainer := container.New(layout.NewCustomPaddedLayout(10, 10, 10, 10), editorScroll)
 	sidebar := container.NewAppTabs(
 		container.NewTabItem("Explorer", fileTree),
@@ -51,5 +53,5 @@ func setTree(myWindow fyne.Window) {
 	sidebar.SetTabLocation(container.TabLocationLeading)
 	content := container.NewHSplit(sidebar, textEditorContainer)
 	content.SetOffset(0.25)
-	myWindow.SetContent(content)
+	myWindow.SetContent(container.NewBorder(nil, statusBar.CanvasObject(), nil, nil, content))
 }

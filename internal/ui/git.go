@@ -14,6 +14,7 @@ type GitView struct {
 	repository *git.Repository
 	onOpen     func(string)
 	onError    func(error)
+	onRefresh  func()
 
 	root           *fyne.Container
 	refresh        *widget.Button
@@ -61,6 +62,10 @@ func NewGitView(rootPath string, onOpen func(string), onError func(error)) *GitV
 func (v *GitView) SetRoot(rootPath string) {
 	v.repository = git.NewRepository(rootPath)
 	v.Refresh()
+}
+
+func (v *GitView) SetOnRefresh(onRefresh func()) {
+	v.onRefresh = onRefresh
 }
 
 func (v *GitView) CanvasObject() fyne.CanvasObject {

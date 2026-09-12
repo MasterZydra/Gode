@@ -26,6 +26,7 @@ func setMainMenu(myWindow fyne.Window) {
 					}
 					fileTree.Refresh()
 					gitView.SetRoot(selected.Path())
+					statusBar.SetRoot(selected.Path())
 					textEditor.Clear()
 				})
 			}, myWindow)
