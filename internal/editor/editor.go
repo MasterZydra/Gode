@@ -70,7 +70,10 @@ func (e *Editor) Save() error {
 	if err != nil {
 		return err
 	}
-	text := strings.ReplaceAll(e.Widget.Text(), "\n", e.lineEnding)
+	text := e.Widget.Text()
+	if e.lineEnding != "\n" {
+		text = strings.ReplaceAll(text, "\n", e.lineEnding)
+	}
 	if err := os.WriteFile(e.SelectedPath, []byte(text), fileInfo.Mode().Perm()); err != nil {
 		return err
 	}
