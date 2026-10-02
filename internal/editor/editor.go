@@ -7,6 +7,7 @@ import (
 	"gode/internal/widgets/codeeditor"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
 const MaxFileSize int64 = 5 * 1024 * 1024
@@ -17,11 +18,12 @@ type Editor struct {
 	Dirty          bool
 	OnStateChanged func()
 	loading        bool
+	lineEnding     string
 }
 
 func New() *Editor {
 	codeEditor := codeeditor.NewCodeEditor()
-	editor := &Editor{Widget: codeEditor}
+	editor := &Editor{Widget: codeEditor, lineEnding: "\n"}
 	codeEditor.OnChanged = func(string) {
 		if !editor.loading {
 			editor.Dirty = true
@@ -47,11 +49,13 @@ func (e *Editor) Load(path string) error {
 		return err
 	}
 
+	text, lineEnding := normalizeLineEndings(contents)
 	e.loading = true
 	e.Widget.SetHighlighter(highlighter.HighlighterForFile(path))
-	e.Widget.SetText(string(contents))
+	e.Widget.SetText(text)
 	e.loading = false
 	e.SelectedPath = path
+	e.lineEnding = lineEnding
 	e.Dirty = false
 	e.notifyStateChanged()
 	return nil
@@ -66,7 +70,8 @@ func (e *Editor) Save() error {
 	if err != nil {
 		return err
 	}
-	if err := os.WriteFile(e.SelectedPath, []byte(e.Widget.Text()), fileInfo.Mode().Perm()); err != nil {
+	text := strings.ReplaceAll(e.Widget.Text(), "\n", e.lineEnding)
+	if err := os.WriteFile(e.SelectedPath, []byte(text), fileInfo.Mode().Perm()); err != nil {
 		return err
 	}
 
@@ -96,6 +101,7 @@ func (e *Editor) Format() error {
 func (e *Editor) Clear() {
 	e.SelectedPath = ""
 	e.Dirty = false
+	e.lineEnding = "\n"
 	e.loading = true
 	e.Widget.SetHighlighter(nil)
 	e.Widget.SetText("")
@@ -121,4 +127,37 @@ func (e *Editor) Title() string {
 		return "• " + e.FileName()
 	}
 	return e.FileName()
+}
+
+func normalizeLineEndings(contents []byte) (string, string) {
+	var text strings.Builder
+	text.Grow(len(contents))
+	lineEnding := "\n"
+	foundLineEnding := false
+
+	for i := 0; i < len(contents); i++ {
+		switch contents[i] {
+		case '\r':
+			lineEndingForCharacter := "\r"
+			if i+1 < len(contents) && contents[i+1] == '\n' {
+				lineEndingForCharacter = "\r\n"
+				i++
+			}
+			if !foundLineEnding {
+				lineEnding = lineEndingForCharacter
+				foundLineEnding = true
+			}
+			text.WriteByte('\n')
+		case '\n':
+			if !foundLineEnding {
+				lineEnding = "\n"
+				foundLineEnding = true
+			}
+			text.WriteByte('\n')
+		default:
+			text.WriteByte(contents[i])
+		}
+	}
+
+	return text.String(), lineEnding
 }
